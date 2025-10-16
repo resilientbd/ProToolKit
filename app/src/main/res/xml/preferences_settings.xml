@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ListPreference
+        android:key="pref_theme_mode"
+        android:title="@string/settings_dark_mode"
+        android:summary="@string/settings_dark_mode_summary"
+        android:entries="@array/settings_theme_mode_entries"
+        android:entryValues="@array/settings_theme_mode_values"
+        android:defaultValue="system" />
+
+    <androidx.preference.SwitchPreferenceCompat
+        android:key="pref_haptics_enabled"
+        android:title="@string/settings_haptics"
+        android:summary="@string/settings_haptics_summary"
+        android:defaultValue="true" />
+
+    <Preference
+        android:key="pref_rewarded_ads"
+        android:title="@string/settings_rewarded_ads"
+        android:summary="@string/settings_rewarded_ads_summary" />
+
+    <Preference
+        android:key="pref_language"
+        android:title="@string/settings_language"
+        android:summary="@string/settings_language_summary"
+        android:enabled="false" />
+
+</PreferenceScreen>

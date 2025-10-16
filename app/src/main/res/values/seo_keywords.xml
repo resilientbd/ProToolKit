@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="seo_keywords">
+        <item>toolkit app</item>
+        <item>all in one tools</item>
+        <item>utility app</item>
+        <item>android utility tools</item>
+        <item>unit converter</item>
+        <item>qr barcode scanner</item>
+        <item>file manager tools</item>
+        <item>device info android</item>
+        <item>network tools ping</item>
+        <item>text tools case converter</item>
+        <item>mobile cleaner helper</item>
+        <item>battery and storage info</item>
+        <item>professional toolkit</item>
+        <item>productivity tools</item>
+        <item>offline utilities</item>
+        <item>android toolkit pro</item>
+        <item>phone maintenance app</item>
+        <item>performance booster</item>
+    </string-array>
+</resources>

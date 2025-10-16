@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.example.protoolkit.ui.home.HomeFragment"
+        android:label="@string/bottom_nav_home"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/toolsFragment"
+        android:name="com.example.protoolkit.ui.tools.ToolsFragment"
+        android:label="@string/bottom_nav_tools"
+        tools:layout="@layout/fragment_tools" />
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.example.protoolkit.ui.settings.SettingsFragment"
+        android:label="@string/bottom_nav_settings" />
+
+    <fragment
+        android:id="@+id/unitConverterFragment"
+        android:name="com.example.protoolkit.ui.tools.unit.UnitConverterFragment"
+        android:label="@string/label_unit_converter"
+        tools:layout="@layout/fragment_unit_converter" />
+
+    <fragment
+        android:id="@+id/textToolsFragment"
+        android:name="com.example.protoolkit.ui.tools.text.TextToolsFragment"
+        android:label="@string/label_text_tools"
+        tools:layout="@layout/fragment_text_tools" />
+
+    <fragment
+        android:id="@+id/deviceInfoFragment"
+        android:name="com.example.protoolkit.ui.tools.device.DeviceInfoFragment"
+        android:label="@string/label_device_info"
+        tools:layout="@layout/fragment_device_info" />
+
+    <fragment
+        android:id="@+id/networkToolsFragment"
+        android:name="com.example.protoolkit.ui.tools.network.NetworkToolsFragment"
+        android:label="@string/label_network_tools"
+        tools:layout="@layout/fragment_network_tools" />
+
+    <fragment
+        android:id="@+id/fileToolsFragment"
+        android:name="com.example.protoolkit.ui.tools.file.FileToolsFragment"
+        android:label="@string/label_file_tools"
+        tools:layout="@layout/fragment_file_tools" />
+
+    <fragment
+        android:id="@+id/qrScannerFragment"
+        android:name="com.example.protoolkit.ui.tools.qr.QrScannerFragment"
+        android:label="@string/label_qr_scanner"
+        tools:layout="@layout/fragment_qr_scanner" />
+
+</navigation>

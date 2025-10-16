@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.ProToolkit" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorOnPrimary">@color/brand_on_primary</item>
+        <item name="colorSecondary">@color/brand_secondary</item>
+        <item name="colorOnSecondary">@color/brand_on_secondary</item>
+        <item name="colorTertiary">@color/brand_tertiary</item>
+        <item name="colorSurface">@color/brand_inverse_surface</item>
+        <item name="colorSurfaceVariant">@color/brand_outline</item>
+        <item name="colorOutline">@color/brand_surface_variant</item>
+        <item name="android:statusBarColor">?attr/colorSurface</item>
+        <item name="android:navigationBarColor">?attr/colorSurface</item>
+        <item name="actionBarTheme">@style/ThemeOverlay.ProToolkit.Toolbar</item>
+        <item name="toolbarStyle">@style/Widget.ProToolkit.Toolbar</item>
+        <item name="materialCardViewStyle">@style/Widget.ProToolkit.Card</item>
+        <item name="bottomNavigationStyle">@style/Widget.ProToolkit.BottomNav</item>
+        <item name="android:windowBackground">@color/brand_inverse_surface</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+
+</resources>

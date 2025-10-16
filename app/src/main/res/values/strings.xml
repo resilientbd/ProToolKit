@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pro Toolkit: All-in-One Utilities</string>
+    <string name="app_title">Pro Toolkit</string>
+    <string name="marketing_short_description">Boost productivity with essential utilities in one smart Android toolkit.</string>
+    <string name="marketing_feature_list_title">Feature Highlights</string>
+    <string name="feature_unit_converter">Convert units for length, weight, area, and temperature instantly.</string>
+    <string name="feature_text_tools">Format text, count words, and adjust casing with live feedback.</string>
+    <string name="feature_device_info">Check device hardware, software, storage, and memory health at a glance.</string>
+    <string name="feature_qr_scanner">Scan QR and barcodes (camera permission required).</string>
+    <string name="feature_network_tools">Test connectivity with quick latency checks.</string>
+    <string name="feature_file_tools">Review storage usage and clean wisely with safe suggestions.</string>
+    <string name="home_search_hint">Search tools</string>
+    <string name="bottom_nav_home">Home</string>
+    <string name="bottom_nav_tools">Tools</string>
+    <string name="bottom_nav_settings">Settings</string>
+    <string name="tools_header">All Tools</string>
+    <string name="label_unit_converter">Unit Converter</string>
+    <string name="label_text_tools">Text Tools</string>
+    <string name="label_device_info">Device Info</string>
+    <string name="label_qr_scanner">QR &amp; Barcode</string>
+    <string name="label_file_tools">File Tools</string>
+    <string name="label_network_tools">Network Tools</string>
+    <string name="label_ping_now">Ping Now</string>
+    <string name="label_scan_now">Start Scan</string>
+    <string name="label_storage_overview">Storage overview</string>
+    <string name="label_cleaner_suggestion">Cleaner suggestions (safe)</string>
+    <string name="label_latency_result">Latency: %1$d ms</string>
+    <string name="label_latency_error">Unable to measure latency. Check connection.</string>
+    <string name="label_ping_target">Target URL or IP</string>
+    <string name="label_ping_placeholder">google.com</string>
+    <string name="label_permission_camera">Camera access</string>
+    <string name="label_permission_rationale_scanner">Camera access is required to scan QR and barcodes.</string>
+    <string name="action_grant_permission">Grant permission</string>
+    <string name="action_open_settings">Open settings</string>
+    <string name="unit_category_length">Length</string>
+    <string name="unit_category_weight">Weight</string>
+    <string name="unit_category_temperature">Temperature</string>
+    <string name="unit_category_area">Area</string>
+    <string name="unit_input_hint">Enter value</string>
+    <string name="unit_result_label">Result</string>
+    <string name="unit_swap_units">Swap</string>
+    <string-array name="unit_length_options">
+        <item>Meter</item>
+        <item>Kilometer</item>
+        <item>Foot</item>
+        <item>Yard</item>
+        <item>Mile</item>
+    </string-array>
+    <string-array name="unit_weight_options">
+        <item>Kilogram</item>
+        <item>Gram</item>
+        <item>Pound</item>
+        <item>Ounce</item>
+    </string-array>
+    <string-array name="unit_temperature_options">
+        <item>Celsius</item>
+        <item>Fahrenheit</item>
+        <item>Kelvin</item>
+    </string-array>
+    <string-array name="unit_area_options">
+        <item>Square meter</item>
+        <item>Square kilometer</item>
+        <item>Square foot</item>
+        <item>Square yard</item>
+        <item>Acre</item>
+    </string-array>
+    <string name="text_tools_input_hint">Type or paste text</string>
+    <string name="text_tools_uppercase">Uppercase</string>
+    <string name="text_tools_lowercase">Lowercase</string>
+    <string name="text_tools_titlecase">Title Case</string>
+    <string name="text_tools_copy">Copy result</string>
+    <string name="text_tools_copy_success">Copied to clipboard</string>
+    <string name="text_tools_word_count">Words: %1$d</string>
+    <string name="text_tools_character_count">Characters: %1$d</string>
+    <string name="text_tools_empty">Start typing to see magic happen.</string>
+    <string name="device_info_title">Device Overview</string>
+    <string name="device_info_os_version">Android version</string>
+    <string name="device_info_model">Model</string>
+    <string name="device_info_storage">Storage</string>
+    <string name="device_info_memory">Memory</string>
+    <string name="device_info_refresh">Refresh</string>
+    <string name="device_info_unknown">Unknown</string>
+    <string name="device_info_storage_template">%1$s free of %2$s</string>
+    <string name="device_info_memory_template">%1$s free of %2$s</string>
+    <string name="device_info_os_version_value">Android %1$s (SDK %2$d)</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_dark_mode">Theme mode</string>
+    <string name="settings_dark_mode_summary">Choose Light, Dark, or Follow system.</string>
+    <string name="settings_dark_mode_entry_system">Follow system</string>
+    <string name="settings_dark_mode_entry_light">Light</string>
+    <string name="settings_dark_mode_entry_dark">Dark</string>
+    <string-array name="settings_theme_mode_entries">
+        <item>@string/settings_dark_mode_entry_system</item>
+        <item>@string/settings_dark_mode_entry_light</item>
+        <item>@string/settings_dark_mode_entry_dark</item>
+    </string-array>
+    <string-array name="settings_theme_mode_values">
+        <item>system</item>
+        <item>light</item>
+        <item>dark</item>
+    </string-array>
+    <string name="settings_haptics">Haptic feedback</string>
+    <string name="settings_haptics_summary">Vibrate on critical taps.</string>
+    <string name="settings_rewarded_ads">Remove ads for 1 hour</string>
+    <string name="settings_rewarded_ads_summary">Watch a rewarded ad to disable ads temporarily.</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_summary">More languages coming soon.</string>
+    <string name="settings_ads_disabled_until">Ads disabled until %1$s</string>
+    <string name="ads_loading">Loading ad…</string>
+    <string name="ads_not_available">Ad not available right now.</string>
+    <string name="ads_rewarded_success">Ads disabled for 1 hour!</string>
+    <string name="ads_rewarded_failure">Reward unavailable. Try again later.</string>
+    <string name="ads_rewarded_placeholder">TODO: Replace with production ad unit IDs.</string>
+    <string name="tool_banner_content_description">Advertisement banner</string>
+    <string name="content_description_toolbar">Toolbar</string>
+    <string name="content_description_search">Search tools</string>
+    <string name="content_description_bottom_nav">Primary navigation</string>
+    <string name="content_description_tool_icon">%1$s icon</string>
+    <string name="content_description_theme_toggle">Toggle dark mode</string>
+    <string name="content_description_haptic_toggle">Toggle haptic feedback</string>
+    <string name="content_description_rewarded_button">Activate rewarded ad to remove ads</string>
+    <string name="network_test_in_progress">Measuring latency…</string>
+    <string name="network_test_success">Latency recorded.</string>
+    <string name="network_test_failure">Network request failed.</string>
+    <string name="file_suggestion_cache_title">Review app cache</string>
+    <string name="file_suggestion_cache_description">Large cache files can be cleared from Settings &gt; Apps without losing data.</string>
+    <string name="file_suggestion_downloads_title">Clean downloads folder</string>
+    <string name="file_suggestion_downloads_description">Delete duplicate downloads manually to free meaningful space.</string>
+    <string name="file_suggestion_media_title">Backup media to cloud</string>
+    <string name="file_suggestion_media_description">Move photos/videos to cloud storage to reclaim on-device memory.</string>
+    <string name="file_suggestion_cache_description_with_size">Large cache files (%1$s) can be cleared from Settings &gt; Apps without losing data.</string>
+    <string name="file_suggestion_downloads_description_with_size">Delete duplicate downloads (%1$s) manually to free meaningful space.</string>
+    <string name="file_suggestion_media_description_with_size">Move photos/videos (%1$s) to cloud storage to reclaim on-device memory.</string>    <string name="qr_scanner_status_active">Scanner active — point at a code.</string>
+    <string name="qr_scanner_status_inactive">Scanner inactive</string>
+    <string name="qr_scanner_stop">Stop scan</string>
+    <string name="permission_already_granted">Permission already granted</string>
+    <string name="qr_scanner_preview_title">Camera preview placeholder</string>
+    <string name="qr_scanner_preview_title_ready">Camera preview ready</string>
+    <string name="qr_scanner_preview_title_permission">Enable camera to preview</string>
+    <string name="qr_scanner_preview_description">Preview frames will appear here once the QR engine is connected.</string>
+    <string name="qr_scanner_preview_permission_hint">Grant camera permission to enable the preview area.</string>
+    <string name="qr_scanner_status_idle">Scanner idle.</string>
+    <string name="qr_scanner_permission_required">Camera permission required to start scanning.</string>
+    <string name="qr_scanner_ready_message">Ready to scan. Tap Start when you are ready.</string>
+    <string name="qr_scanner_placeholder_active">Camera preview active. Align the code within the frame.</string>
+    <string name="qr_scanner_paused_message">Scan paused. Tap Start to resume.</string>
+    <string name="qr_scanner_preview_ready_hint">Tap Start to initiate the live camera preview.</string>
+    <string name="qr_scanner_preview_error">Unable to start camera preview. Please try again.</string>
+    <string name="qr_scanner_preview_initializing">Starting camera preview…</string>
+</resources>
