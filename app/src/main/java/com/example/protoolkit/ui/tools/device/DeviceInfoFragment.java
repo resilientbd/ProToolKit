@@ -14,10 +14,8 @@ import com.example.protoolkit.ui.base.BaseFragment;
 import com.example.protoolkit.util.HapticHelper;
 import com.example.protoolkit.util.ServiceLocator;
 
-import java.util.List;
-
 /**
- * Displays device information in a friendly overview.
+ * Displays comprehensive device information in a professional overview.
  */
 public class DeviceInfoFragment extends BaseFragment {
 
@@ -39,11 +37,16 @@ public class DeviceInfoFragment extends BaseFragment {
                 HapticHelper.vibrate(requireContext());
             }
         });
-        observe(viewModel.getDeviceInfo(), this::renderInfo);
+        observeData();
+    }
+
+    private void observeData() {
+        // Observe basic device information
+        observe(viewModel.getDeviceInfo(), this::renderDeviceInfo);
         observe(viewModel.isLoading(), loading -> binding.progressIndicator.setVisibility(Boolean.TRUE.equals(loading) ? View.VISIBLE : View.GONE));
     }
 
-    private void renderInfo(@NonNull DeviceInfo info) {
+    private void renderDeviceInfo(@NonNull DeviceInfo info) {
         // Basic Device Information
         binding.textManufacturer.setText(String.format("Manufacturer: %s", info.getManufacturer()));
         binding.textModel.setText(String.format("Model: %s", info.getModel()));
@@ -62,7 +65,8 @@ public class DeviceInfoFragment extends BaseFragment {
         // Storage Information
         binding.textStorage.setText(String.format("Total Storage: %s", info.getStorageTotal()));
         binding.textStorageFree.setText(String.format("Free Storage: %s", info.getStorageFree()));
-        binding.textInternalStorage.setText(String.format("Internal Storage: %s", info.getInternalStorageTotal()));
+        binding.textInternalStorage.setText(String.format("Internal Storage: %s", 
+            info.getInternalStorageTotal().equals("Unknown") ? "Not available" : info.getInternalStorageTotal()));
         binding.textExternalStorage.setText(String.format("External Storage: %s", 
             info.getExternalStorageTotal().equals("Unknown") ? "Not available" : info.getExternalStorageTotal()));
 

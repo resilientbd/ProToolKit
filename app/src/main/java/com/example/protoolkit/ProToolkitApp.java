@@ -21,6 +21,7 @@ public class ProToolkitApp extends Application {
         PreferenceManager.setDefaultValues(this, R.xml.preferences_settings, false);
         SettingsRepository settingsRepository = ServiceLocator.getSettingsRepository();
         ThemeUtils.applyTheme(settingsRepository.getThemeMode());
-        AdsManager.init(this, settingsRepository);
+        // Initialize AdsManager with context
+        AdsManager.getInstance(this);
     }
 }

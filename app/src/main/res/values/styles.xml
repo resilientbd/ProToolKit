@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-
+<resources>
+    <!-- Base application theme. -->
     <style name="Theme.ProToolkit" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/brand_primary</item>
@@ -18,4 +18,8 @@
         <item name="android:windowBackground">@color/background_default</item>
     </style>
 
+    <!-- Settings theme -->
+    <style name="Theme.ProToolkit.Settings" parent="Theme.ProToolkit">
+        <item name="android:windowBackground">@color/background_surface</item>
+    </style>
 </resources>

@@ -45,7 +45,7 @@ public class HomeFragment extends BaseFragment {
         observe(viewModel.areAdsVisible(), visible -> {
             if (Boolean.TRUE.equals(visible)) {
                 binding.bannerContainer.setVisibility(View.VISIBLE);
-                AdsManager.getInstance().loadBanner(binding.bannerContainer);
+                AdsManager.getInstance(requireContext()).loadBanner(binding.bannerContainer);
             } else {
                 binding.bannerContainer.setVisibility(View.GONE);
             }
@@ -86,7 +86,7 @@ public class HomeFragment extends BaseFragment {
         if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
             HapticHelper.vibrate(requireContext());
         }
-        AdsManager.getInstance().showInterstitialIfAvailable(requireActivity(), () ->
+        AdsManager.getInstance(requireContext()).showInterstitialIfAvailable(requireActivity(), () ->
                 NavHostFragment.findNavController(this).navigate(item.getDestinationId()));
     }
 }

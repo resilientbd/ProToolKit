@@ -17,7 +17,7 @@ import com.example.protoolkit.util.HapticHelper;
 import com.example.protoolkit.util.ServiceLocator;
 
 /**
- * Fragment that runs comprehensive network tests.
+ * Fragment that runs a simple latency test against a target host.
  */
 public class NetworkToolsFragment extends BaseFragment {
 
@@ -33,72 +33,26 @@ public class NetworkToolsFragment extends BaseFragment {
         super.onViewCreated(view, savedInstanceState);
         binding = FragmentNetworkToolsBinding.bind(view);
         viewModel = new ViewModelProvider(this, ServiceLocator.getViewModelFactory()).get(NetworkToolsViewModel.class);
-        
+
         setupInput();
-        
-        // Set up all test buttons
         binding.buttonPing.setOnClickListener(v -> {
             viewModel.measureLatency();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
             }
         });
-        
-        binding.buttonSpeedTest.setOnClickListener(v -> {
-            viewModel.performSpeedTest();
-            if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
-                HapticHelper.vibrate(requireContext());
-            }
-        });
-        
-        binding.buttonConnectionCheck.setOnClickListener(v -> {
-            viewModel.checkConnection();
-            if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
-                HapticHelper.vibrate(requireContext());
-            }
-        });
-        
-        binding.buttonPingHost.setOnClickListener(v -> {
-            viewModel.pingHost();
-            if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
-                HapticHelper.vibrate(requireContext());
+
+        observe(viewModel.getLatencyMs(), latency -> {
+            if (latency == null) {
+                binding.resultLatency.setText(R.string.label_latency_error);
+            } else {
+                binding.resultLatency.setText(getString(R.string.label_latency_result, latency));
             }
         });
 
-        // Observe results
-        observe(viewModel.getLatencyMs(), latency -> {
-            if (latency == null) {
-                binding.textResult.setText(R.string.label_latency_error);
-            } else {
-                binding.textResult.setText(getString(R.string.label_latency_result, latency));
-            }
-        });
-        
-        observe(viewModel.getDownloadSpeed(), speed -> {
-            if (speed != null) {
-                binding.textResult.append("\nDownload Speed: " + speed + " KB/s");
-            }
-        });
-        
-        observe(viewModel.getConnectionInfo(), info -> {
-            if (info != null) {
-                String connInfo = "IP: " + info.ipAddress + 
-                                "\nType: " + info.networkType + 
-                                "\nCarrier: " + info.carrierName;
-                binding.textResult.setText(connInfo);
-            }
-        });
-        
-        observe(viewModel.getSpeedTestProgress(), progress -> {
-            if (progress != null) {
-                binding.progressIndicator.setProgress(progress);
-            }
-        });
-        
-        observe(viewModel.inProgress(), progress -> {
-            binding.progressIndicator.setVisibility(Boolean.TRUE.equals(progress) ? View.VISIBLE : View.GONE);
-        });
-        
+        observe(viewModel.inProgress(), inProgress ->
+                binding.progressIndicator.setVisibility(Boolean.TRUE.equals(inProgress) ? View.VISIBLE : View.GONE));
+
         observe(viewModel.getErrorMessage(), message -> {
             if (message != null && !message.isEmpty()) {
                 Toast.makeText(requireContext(), getString(R.string.network_test_failure) + " " + message, Toast.LENGTH_SHORT).show();
@@ -110,8 +64,7 @@ public class NetworkToolsFragment extends BaseFragment {
         binding.inputTarget.setText(viewModel.getTargetUrl().getValue());
         binding.inputTarget.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -119,8 +72,13 @@ public class NetworkToolsFragment extends BaseFragment {
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-            }
+            public void afterTextChanged(Editable s) { }
         });
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
     }
 }

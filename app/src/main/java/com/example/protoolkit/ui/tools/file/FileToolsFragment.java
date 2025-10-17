@@ -15,7 +15,7 @@ import com.example.protoolkit.util.HapticHelper;
 import com.example.protoolkit.util.ServiceLocator;
 
 /**
- * Shows storage summary and safe cleaner suggestions.
+ * Shows comprehensive storage summary and file management tools.
  */
 public class FileToolsFragment extends BaseFragment {
 
@@ -36,7 +36,11 @@ public class FileToolsFragment extends BaseFragment {
         binding.suggestionList.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.suggestionList.setAdapter(adapter);
         
-        // Set up button click listeners
+        setupButtons();
+        observeData();
+    }
+
+    private void setupButtons() {
         binding.buttonCleanCache.setOnClickListener(v -> {
             viewModel.cleanCache();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
@@ -57,12 +61,14 @@ public class FileToolsFragment extends BaseFragment {
                 HapticHelper.vibrate(requireContext());
             }
         });
-        
+    }
+
+    private void observeData() {
+        // Observe storage summary
         observe(viewModel.getStorageSummary(), summary -> binding.textStorageSummary.setText(summary));
-        observe(viewModel.getSuggestions(), adapter::submitList);
-        observe(viewModel.isLoading(), loading -> binding.progressIndicator.setVisibility(Boolean.TRUE.equals(loading) ? View.VISIBLE : View.GONE));
+        observe(viewModel.getStorageProgress(), progress -> binding.storageProgress.setProgress(progress));
         
-        // Observe detailed storage information
+        // Observe detailed storage breakdown
         observe(viewModel.getAppsDataSize(), size -> binding.textAppsDataSize.setText(size));
         observe(viewModel.getImagesSize(), size -> binding.textImagesSize.setText(size));
         observe(viewModel.getVideosSize(), size -> binding.textVideosSize.setText(size));
@@ -70,7 +76,16 @@ public class FileToolsFragment extends BaseFragment {
         observe(viewModel.getDocumentsSize(), size -> binding.textDocumentsSize.setText(size));
         observe(viewModel.getDownloadsSize(), size -> binding.textDownloadsSize.setText(size));
         
-        // Observe storage progress
-        observe(viewModel.getStorageProgress(), progress -> binding.storageProgress.setProgress(progress));
+        // Observe cleanup suggestions
+        observe(viewModel.getSuggestions(), suggestions -> {
+            if (suggestions != null) {
+                adapter.submitList(suggestions);
+            }
+        });
+        
+        // Observe loading state
+        observe(viewModel.isLoading(), loading -> {
+            binding.progressIndicator.setVisibility(Boolean.TRUE.equals(loading) ? View.VISIBLE : View.GONE);
+        });
     }
 }

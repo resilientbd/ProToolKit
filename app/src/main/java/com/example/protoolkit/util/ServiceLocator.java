@@ -10,6 +10,7 @@ import com.example.protoolkit.data.converter.UnitConverterRepository;
 import com.example.protoolkit.data.device.DeviceInfoRepository;
 import com.example.protoolkit.data.file.FileToolsRepository;
 import com.example.protoolkit.data.network.NetworkRepository;
+import com.example.protoolkit.data.network.NetworkToolsRepository;
 import com.example.protoolkit.data.settings.SettingsRepository;
 import com.example.protoolkit.data.text.TextToolsRepository;
 
@@ -24,6 +25,7 @@ public final class ServiceLocator {
     private static TextToolsRepository textToolsRepository;
     private static DeviceInfoRepository deviceInfoRepository;
     private static NetworkRepository networkRepository;
+    private static NetworkToolsRepository networkToolsRepository;
     private static FileToolsRepository fileToolsRepository;
     private static AnalyticsLogger analyticsLogger;
     private static ViewModelFactory viewModelFactory;
@@ -74,6 +76,13 @@ public final class ServiceLocator {
         return networkRepository;
     }
 
+    public static NetworkToolsRepository getNetworkToolsRepository() {
+        if (networkToolsRepository == null) {
+            networkToolsRepository = new NetworkToolsRepository(application);
+        }
+        return networkToolsRepository;
+    }
+
     public static FileToolsRepository getFileToolsRepository() {
         if (fileToolsRepository == null) {
             fileToolsRepository = new FileToolsRepository(application);
@@ -97,12 +106,13 @@ public final class ServiceLocator {
                     getTextToolsRepository(),
                     getDeviceInfoRepository(),
                     getNetworkRepository(),
+                    getNetworkToolsRepository(),
                     getFileToolsRepository());
         }
         return viewModelFactory;
     }
 
     public static AdsManager getAdsManager() {
-        return AdsManager.getInstance();
+        return AdsManager.getInstance(application);
     }
 }

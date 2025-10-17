@@ -10,6 +10,7 @@ import com.example.protoolkit.data.converter.UnitConverterRepository;
 import com.example.protoolkit.data.device.DeviceInfoRepository;
 import com.example.protoolkit.data.file.FileToolsRepository;
 import com.example.protoolkit.data.network.NetworkRepository;
+import com.example.protoolkit.data.network.NetworkToolsRepository;
 import com.example.protoolkit.data.settings.SettingsRepository;
 import com.example.protoolkit.data.text.TextToolsRepository;
 import com.example.protoolkit.ui.home.HomeViewModel;
@@ -33,6 +34,7 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
     private final TextToolsRepository textToolsRepository;
     private final DeviceInfoRepository deviceInfoRepository;
     private final NetworkRepository networkRepository;
+    private final NetworkToolsRepository networkToolsRepository;
     private final FileToolsRepository fileToolsRepository;
 
     public ViewModelFactory(
@@ -42,6 +44,7 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
             TextToolsRepository textToolsRepository,
             DeviceInfoRepository deviceInfoRepository,
             NetworkRepository networkRepository,
+            NetworkToolsRepository networkToolsRepository,
             FileToolsRepository fileToolsRepository) {
         this.application = application;
         this.settingsRepository = settingsRepository;
@@ -49,6 +52,7 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
         this.textToolsRepository = textToolsRepository;
         this.deviceInfoRepository = deviceInfoRepository;
         this.networkRepository = networkRepository;
+        this.networkToolsRepository = networkToolsRepository;
         this.fileToolsRepository = fileToolsRepository;
     }
 
@@ -67,7 +71,7 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
         } else if (modelClass.isAssignableFrom(ToolsViewModel.class)) {
             return (T) new ToolsViewModel(application);
         } else if (modelClass.isAssignableFrom(NetworkToolsViewModel.class)) {
-            return (T) new NetworkToolsViewModel(networkRepository);
+            return (T) new NetworkToolsViewModel(networkToolsRepository);
         } else if (modelClass.isAssignableFrom(FileToolsViewModel.class)) {
             return (T) new FileToolsViewModel(fileToolsRepository);
         } else if (modelClass.isAssignableFrom(QrScannerViewModel.class)) {

@@ -50,7 +50,7 @@ public class ToolsFragment extends BaseFragment {
         if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
             HapticHelper.vibrate(requireContext());
         }
-        AdsManager.getInstance().showInterstitialIfAvailable(requireActivity(), () ->
+        AdsManager.getInstance(requireContext()).showInterstitialIfAvailable(requireActivity(), () ->
                 NavHostFragment.findNavController(this).navigate(item.getDestinationId()));
     }
 }

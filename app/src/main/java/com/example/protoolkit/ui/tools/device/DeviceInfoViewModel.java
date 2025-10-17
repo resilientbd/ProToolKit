@@ -10,7 +10,7 @@ import com.example.protoolkit.ui.base.BaseViewModel;
 import com.example.protoolkit.util.AppExecutors;
 
 /**
- * Loads and exposes device information.
+ * Loads and exposes comprehensive device information.
  */
 public class DeviceInfoViewModel extends BaseViewModel {
 

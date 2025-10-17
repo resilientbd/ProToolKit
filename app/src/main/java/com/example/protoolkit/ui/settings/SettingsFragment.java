@@ -13,7 +13,7 @@ import androidx.preference.SwitchPreferenceCompat;
 
 import com.example.protoolkit.R;
 import com.example.protoolkit.ads.AdsManager;
-import com.example.protoolkit.ads.AdsManager.RewardListener;
+import com.example.protoolkit.ads.AdsManager.RewardAdListener;
 import com.example.protoolkit.util.AppConstants;
 import com.example.protoolkit.util.ServiceLocator;
 
@@ -82,7 +82,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         Preference rewardPref = findPreference(AppConstants.PREF_REWARDED_AD);
         if (rewardPref != null) {
             rewardPref.setOnPreferenceClickListener(pref -> {
-                AdsManager.getInstance().showRewarded(requireActivity(), new RewardListener() {
+                AdsManager.getInstance(requireContext()).showRewardedAd(requireActivity(), new RewardAdListener() {
                     @Override
                     public void onRewardEarned() {
                         viewModel.disableAdsTemporarily();
@@ -90,8 +90,13 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                     }
 
                     @Override
-                    public void onRewardClosedWithoutReward() {
+                    public void onAdClosed() {
                         Toast.makeText(requireContext(), R.string.ads_rewarded_failure, Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onAdFailed(String error) {
+                        Toast.makeText(requireContext(), R.string.ads_rewarded_failure + ": " + error, Toast.LENGTH_SHORT).show();
                     }
                 });
                 return true;

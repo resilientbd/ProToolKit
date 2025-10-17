@@ -1,4 +1,4 @@
-package com.example.protoolkit.data.device;
+package com.example.protoolkit.util;
 
 import android.app.ActivityManager;
 import android.app.Application;
@@ -25,9 +25,6 @@ import android.view.WindowManager;
 import androidx.annotation.NonNull;
 
 import com.example.protoolkit.R;
-import com.example.protoolkit.domain.model.DeviceInfo;
-import com.example.protoolkit.util.AppConstants;
-import com.example.protoolkit.util.FormatUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -46,80 +43,62 @@ import java.util.Locale;
 /**
  * Collects comprehensive device information for display.
  */
-public class DeviceInfoRepository {
+public class DeviceInfoCollector {
 
     private final Application application;
 
-    public DeviceInfoRepository(@NonNull Application application) {
+    public DeviceInfoCollector(@NonNull Application application) {
         this.application = application;
     }
 
+    /**
+     * Gets basic device information.
+     */
     @NonNull
-    public DeviceInfo fetchDeviceInfo() {
-        // Basic Device Information
-        String manufacturer = safeGetString(() -> Build.MANUFACTURER, "Unknown");
-        String model = safeGetString(() -> Build.MODEL, "Unknown");
-        String brand = safeGetString(() -> Build.BRAND, "Unknown");
-        String androidVersion = safeGetString(() -> Build.VERSION.RELEASE, "Unknown");
-        int sdkInt = Build.VERSION.SDK_INT;
-        String buildNumber = safeGetString(() -> Build.DISPLAY, "Unknown");
-
-        // Hardware Information
-        String board = safeGetString(() -> Build.BOARD, "Unknown");
-        String bootloader = safeGetString(() -> Build.BOOTLOADER, "Unknown");
-        String hardware = safeGetString(() -> Build.HARDWARE, "Unknown");
-        String product = safeGetString(() -> Build.PRODUCT, "Unknown");
-        String radioVersion = safeGetString(() -> Build.getRadioVersion(), "Unknown");
-        String fingerprint = safeGetString(() -> Build.FINGERPRINT, "Unknown");
-
-        // Storage Information
-        StorageInfo storage = readStorage();
-        StorageInfo internalStorage = readInternalStorage();
-        StorageInfo externalStorage = readExternalStorage();
-
-        // Memory Information
-        MemoryInfo memory = readMemory();
-        String memoryThreshold = FormatUtils.formatBytes(getMemoryThreshold());
-        String memoryClass = getMemoryClass();
-
-        // Network Information
-        NetworkInfoDetails network = readNetworkInfo();
-
-        // Screen Information
-        ScreenInfo screen = readScreenInfo();
-
-        // CPU Information
-        CpuInfo cpu = readCpuInfo();
-
-        // Capabilities
-        String supportedAbis = getSupportedAbis();
-        String glEsVersion = getOpenglEsVersion();
-
+    public DeviceInfo getDeviceInfo() {
         return new DeviceInfo(
                 // Basic Device Information
-                capitalize(manufacturer), model, capitalize(brand),
-                androidVersion, sdkInt, buildNumber,
+                capitalize(Build.MANUFACTURER),
+                Build.MODEL,
+                capitalize(Build.BRAND),
+                Build.VERSION.RELEASE,
+                Build.VERSION.SDK_INT,
+                Build.DISPLAY,
+                
                 // Hardware Information
-                board, bootloader, hardware, product, radioVersion, fingerprint,
+                Build.BOARD,
+                Build.BOOTLOADER,
+                Build.HARDWARE,
+                Build.PRODUCT,
+                Build.getRadioVersion(),
+                Build.FINGERPRINT,
+                
                 // Storage Information
-                storage.freeReadable, storage.totalReadable,
-                internalStorage.freeReadable, internalStorage.totalReadable,
-                externalStorage.freeReadable, externalStorage.totalReadable,
+                getStorageInfo(),
+                getInternalStorageInfo(),
+                getExternalStorageInfo(),
+                
                 // Memory Information
-                memory.freeReadable, memory.totalReadable,
-                memoryThreshold, memoryClass,
+                getMemoryInfo(),
+                getMemoryThreshold(),
+                getMemoryClass(),
+                
                 // Network Information
-                network.type, network.carrier, network.ipAddress, network.macAddress,
+                getNetworkInfo(),
+                
                 // Screen Information
-                screen.size, screen.resolution, screen.density, screen.orientation,
+                getScreenInfo(),
+                
                 // CPU Information
-                cpu.model, cpu.cores, cpu.arch, cpu.frequency,
+                getCpuInfo(),
+                
                 // Capabilities
-                supportedAbis, glEsVersion
+                getSupportedAbis(),
+                getOpenglEsVersion()
         );
     }
 
-    private StorageInfo readStorage() {
+    private StorageInfo getStorageInfo() {
         File path = Environment.getDataDirectory();
         StatFs statFs = new StatFs(path.getAbsolutePath());
         long blockSize = statFs.getBlockSizeLong();
@@ -132,7 +111,7 @@ public class DeviceInfoRepository {
         return new StorageInfo(FormatUtils.formatBytes(freeBytes), FormatUtils.formatBytes(totalBytes));
     }
 
-    private StorageInfo readInternalStorage() {
+    private StorageInfo getInternalStorageInfo() {
         File internalStorage = Environment.getDataDirectory();
         StatFs statFs = new StatFs(internalStorage.getAbsolutePath());
         long blockSize = statFs.getBlockSizeLong();
@@ -145,7 +124,7 @@ public class DeviceInfoRepository {
         return new StorageInfo(FormatUtils.formatBytes(freeBytes), FormatUtils.formatBytes(totalBytes));
     }
 
-    private StorageInfo readExternalStorage() {
+    private StorageInfo getExternalStorageInfo() {
         if (Environment.getExternalStorageDirectory() != null) {
             File externalStorage = Environment.getExternalStorageDirectory();
             StatFs statFs = new StatFs(externalStorage.getAbsolutePath());
@@ -161,7 +140,7 @@ public class DeviceInfoRepository {
         return new StorageInfo("Unknown", "Unknown");
     }
 
-    private MemoryInfo readMemory() {
+    private MemoryInfo getMemoryInfo() {
         ActivityManager manager = (ActivityManager) application.getSystemService(Context.ACTIVITY_SERVICE);
         if (manager == null) {
             return new MemoryInfo("Unknown", "Unknown");
@@ -191,7 +170,7 @@ public class DeviceInfoRepository {
         return "Unknown";
     }
 
-    private NetworkInfoDetails readNetworkInfo() {
+    private NetworkInfoDetails getNetworkInfo() {
         String type = "Unknown";
         String carrier = "Unknown";
         String ipAddress = "Unknown";
@@ -261,7 +240,7 @@ public class DeviceInfoRepository {
         return "0.0.0.0";
     }
 
-    private ScreenInfo readScreenInfo() {
+    private ScreenInfo getScreenInfo() {
         String size = "Unknown";
         String resolution = "Unknown";
         String density = "Unknown";
@@ -319,7 +298,7 @@ public class DeviceInfoRepository {
         return new ScreenInfo(size, resolution, density, orientation);
     }
 
-    private CpuInfo readCpuInfo() {
+    private CpuInfo getCpuInfo() {
         String model = "Unknown";
         String cores = "Unknown";
         String arch = "Unknown";
@@ -410,46 +389,124 @@ public class DeviceInfoRepository {
         return value.substring(0, 1).toUpperCase() + value.substring(1);
     }
 
-    private interface SafeStringSupplier {
-        String get() throws Exception;
-    }
+    // Data classes for device information
+    public static class DeviceInfo {
+        // Basic Device Information
+        public final String manufacturer;
+        public final String model;
+        public final String brand;
+        public final String androidVersion;
+        public final int sdkInt;
+        public final String buildNumber;
 
-    private String safeGetString(SafeStringSupplier supplier, String defaultValue) {
-        try {
-            String result = supplier.get();
-            return result != null ? result : defaultValue;
-        } catch (Exception e) {
-            return defaultValue;
+        // Hardware Information
+        public final String board;
+        public final String bootloader;
+        public final String hardware;
+        public final String product;
+        public final String radioVersion;
+        public final String fingerprint;
+
+        // Storage Information
+        public final StorageInfo storage;
+        public final StorageInfo internalStorage;
+        public final StorageInfo externalStorage;
+
+        // Memory Information
+        public final MemoryInfo memory;
+        public final long memoryThreshold;
+        public final String memoryClass;
+
+        // Network Information
+        public final NetworkInfoDetails network;
+
+        // Screen Information
+        public final ScreenInfo screen;
+
+        // CPU Information
+        public final CpuInfo cpu;
+
+        // Capabilities
+        public final String supportedAbis;
+        public final String glEsVersion;
+
+        public DeviceInfo(
+                String manufacturer,
+                String model,
+                String brand,
+                String androidVersion,
+                int sdkInt,
+                String buildNumber,
+                String board,
+                String bootloader,
+                String hardware,
+                String product,
+                String radioVersion,
+                String fingerprint,
+                StorageInfo storage,
+                StorageInfo internalStorage,
+                StorageInfo externalStorage,
+                MemoryInfo memory,
+                long memoryThreshold,
+                String memoryClass,
+                NetworkInfoDetails network,
+                ScreenInfo screen,
+                CpuInfo cpu,
+                String supportedAbis,
+                String glEsVersion) {
+            this.manufacturer = manufacturer;
+            this.model = model;
+            this.brand = brand;
+            this.androidVersion = androidVersion;
+            this.sdkInt = sdkInt;
+            this.buildNumber = buildNumber;
+            this.board = board;
+            this.bootloader = bootloader;
+            this.hardware = hardware;
+            this.product = product;
+            this.radioVersion = radioVersion;
+            this.fingerprint = fingerprint;
+            this.storage = storage;
+            this.internalStorage = internalStorage;
+            this.externalStorage = externalStorage;
+            this.memory = memory;
+            this.memoryThreshold = memoryThreshold;
+            this.memoryClass = memoryClass;
+            this.network = network;
+            this.screen = screen;
+            this.cpu = cpu;
+            this.supportedAbis = supportedAbis;
+            this.glEsVersion = glEsVersion;
         }
     }
 
-    private static class StorageInfo {
-        final String freeReadable;
-        final String totalReadable;
+    public static class StorageInfo {
+        public final String freeReadable;
+        public final String totalReadable;
 
-        StorageInfo(String freeReadable, String totalReadable) {
+        public StorageInfo(String freeReadable, String totalReadable) {
             this.freeReadable = freeReadable;
             this.totalReadable = totalReadable;
         }
     }
 
-    private static class MemoryInfo {
-        final String freeReadable;
-        final String totalReadable;
+    public static class MemoryInfo {
+        public final String freeReadable;
+        public final String totalReadable;
 
-        MemoryInfo(String freeReadable, String totalReadable) {
+        public MemoryInfo(String freeReadable, String totalReadable) {
             this.freeReadable = freeReadable;
             this.totalReadable = totalReadable;
         }
     }
 
-    private static class NetworkInfoDetails {
-        final String type;
-        final String carrier;
-        final String ipAddress;
-        final String macAddress;
+    public static class NetworkInfoDetails {
+        public final String type;
+        public final String carrier;
+        public final String ipAddress;
+        public final String macAddress;
 
-        NetworkInfoDetails(String type, String carrier, String ipAddress, String macAddress) {
+        public NetworkInfoDetails(String type, String carrier, String ipAddress, String macAddress) {
             this.type = type;
             this.carrier = carrier;
             this.ipAddress = ipAddress;
@@ -457,13 +514,13 @@ public class DeviceInfoRepository {
         }
     }
 
-    private static class ScreenInfo {
-        final String size;
-        final String resolution;
-        final String density;
-        final String orientation;
+    public static class ScreenInfo {
+        public final String size;
+        public final String resolution;
+        public final String density;
+        public final String orientation;
 
-        ScreenInfo(String size, String resolution, String density, String orientation) {
+        public ScreenInfo(String size, String resolution, String density, String orientation) {
             this.size = size;
             this.resolution = resolution;
             this.density = density;
@@ -471,13 +528,13 @@ public class DeviceInfoRepository {
         }
     }
 
-    private static class CpuInfo {
-        final String model;
-        final String cores;
-        final String arch;
-        final String frequency;
+    public static class CpuInfo {
+        public final String model;
+        public final String cores;
+        public final String arch;
+        public final String frequency;
 
-        CpuInfo(String model, String cores, String arch, String frequency) {
+        public CpuInfo(String model, String cores, String arch, String frequency) {
             this.model = model;
             this.cores = cores;
             this.arch = arch;

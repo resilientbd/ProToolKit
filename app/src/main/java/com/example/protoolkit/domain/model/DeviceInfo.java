@@ -2,10 +2,8 @@ package com.example.protoolkit.domain.model;
 
 import androidx.annotation.NonNull;
 
-import java.util.List;
-
 /**
- * Represents device information shown in the Device Info tool.
+ * Represents comprehensive device information shown in the Device Info tool.
  */
 public class DeviceInfo {
 
@@ -136,54 +134,117 @@ public class DeviceInfo {
     }
 
     // Basic Device Information
+    @NonNull
     public String getManufacturer() { return manufacturer; }
+    
+    @NonNull
     public String getModel() { return model; }
+    
+    @NonNull
     public String getBrand() { return brand; }
+    
+    @NonNull
     public String getAndroidVersion() { return androidVersion; }
+    
     public int getSdkInt() { return sdkInt; }
+    
+    @NonNull
     public String getBuildNumber() { return buildNumber; }
 
     // Hardware Information
+    @NonNull
     public String getBoard() { return board; }
+    
+    @NonNull
     public String getBootloader() { return bootloader; }
+    
+    @NonNull
     public String getHardware() { return hardware; }
+    
+    @NonNull
     public String getProduct() { return product; }
+    
+    @NonNull
     public String getRadioVersion() { return radioVersion; }
+    
+    @NonNull
     public String getFingerprint() { return fingerprint; }
 
     // Storage Information
+    @NonNull
     public String getStorageFree() { return storageFree; }
+    
+    @NonNull
     public String getStorageTotal() { return storageTotal; }
+    
+    @NonNull
     public String getInternalStorageFree() { return internalStorageFree; }
+    
+    @NonNull
     public String getInternalStorageTotal() { return internalStorageTotal; }
+    
+    @NonNull
     public String getExternalStorageFree() { return externalStorageFree; }
+    
+    @NonNull
     public String getExternalStorageTotal() { return externalStorageTotal; }
 
     // Memory Information
+    @NonNull
     public String getMemoryFree() { return memoryFree; }
+    
+    @NonNull
     public String getMemoryTotal() { return memoryTotal; }
+    
+    @NonNull
     public String getMemoryThreshold() { return memoryThreshold; }
+    
+    @NonNull
     public String getMemoryClass() { return memoryClass; }
 
     // Network Information
+    @NonNull
     public String getNetworkType() { return networkType; }
+    
+    @NonNull
     public String getNetworkCarrier() { return networkCarrier; }
+    
+    @NonNull
     public String getIpAddress() { return ipAddress; }
+    
+    @NonNull
     public String getMacAddress() { return macAddress; }
 
     // Screen Information
+    @NonNull
     public String getScreenSize() { return screenSize; }
+    
+    @NonNull
     public String getScreenResolution() { return screenResolution; }
+    
+    @NonNull
     public String getScreenDensity() { return screenDensity; }
+    
+    @NonNull
     public String getScreenOrientation() { return screenOrientation; }
 
     // CPU Information
+    @NonNull
     public String getCpuModel() { return cpuModel; }
+    
+    @NonNull
     public String getCpuCores() { return cpuCores; }
+    
+    @NonNull
     public String getCpuArch() { return cpuArch; }
+    
+    @NonNull
     public String getCpuFrequency() { return cpuFrequency; }
 
     // Capabilities
+    @NonNull
     public String getSupportedAbis() { return supportedAbis; }
+    
+    @NonNull
     public String getGlEsVersion() { return glEsVersion; }
 }

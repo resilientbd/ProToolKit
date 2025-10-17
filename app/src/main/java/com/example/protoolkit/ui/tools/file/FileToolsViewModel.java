@@ -56,22 +56,26 @@ public class FileToolsViewModel extends BaseViewModel {
     public void loadData() {
         setLoading(true);
         AppExecutors.io().execute(() -> {
-            // Load storage summary
-            storageSummary.postValue(repository.getStorageSummary());
-            storageProgress.postValue(repository.getStorageProgress());
-            
-            // Load detailed storage breakdown
-            appsDataSize.postValue(repository.getAppsDataSize());
-            imagesSize.postValue(repository.getImagesSize());
-            videosSize.postValue(repository.getVideosSize());
-            audioSize.postValue(repository.getAudioSize());
-            documentsSize.postValue(repository.getDocumentsSize());
-            downloadsSize.postValue(repository.getDownloadsSize());
-            
-            // Load cleanup suggestions
-            suggestions.postValue(repository.getSuggestions());
-            
-            setLoading(false);
+            try {
+                // Load storage summary
+                storageSummary.postValue(repository.getStorageSummary());
+                storageProgress.postValue(repository.getStorageProgress());
+                
+                // Load detailed storage breakdown
+                appsDataSize.postValue(repository.getAppsDataSize());
+                imagesSize.postValue(repository.getImagesSize());
+                videosSize.postValue(repository.getVideosSize());
+                audioSize.postValue(repository.getAudioSize());
+                documentsSize.postValue(repository.getDocumentsSize());
+                downloadsSize.postValue(repository.getDownloadsSize());
+                
+                // Load cleanup suggestions
+                suggestions.postValue(repository.getSuggestions());
+            } catch (Exception e) {
+                postError("Failed to load storage data: " + e.getMessage());
+            } finally {
+                setLoading(false);
+            }
         });
     }
     
@@ -79,27 +83,42 @@ public class FileToolsViewModel extends BaseViewModel {
     public void cleanCache() {
         setLoading(true);
         AppExecutors.io().execute(() -> {
-            repository.cleanCache();
-            // Refresh data after cleaning
-            loadData();
+            try {
+                repository.cleanCache();
+                // Refresh data after cleaning
+                loadData();
+            } catch (Exception e) {
+                postError("Cache cleaning failed: " + e.getMessage());
+                setLoading(false);
+            }
         });
     }
     
     public void clearDownloads() {
         setLoading(true);
         AppExecutors.io().execute(() -> {
-            repository.clearDownloads();
-            // Refresh data after clearing
-            loadData();
+            try {
+                repository.clearDownloads();
+                // Refresh data after clearing
+                loadData();
+            } catch (Exception e) {
+                postError("Downloads clearing failed: " + e.getMessage());
+                setLoading(false);
+            }
         });
     }
     
     public void backupMedia() {
         setLoading(true);
         AppExecutors.io().execute(() -> {
-            repository.backupMedia();
-            // Refresh data after backup
-            loadData();
+            try {
+                repository.backupMedia();
+                // Refresh data after backup
+                loadData();
+            } catch (Exception e) {
+                postError("Media backup failed: " + e.getMessage());
+                setLoading(false);
+            }
         });
     }
 }

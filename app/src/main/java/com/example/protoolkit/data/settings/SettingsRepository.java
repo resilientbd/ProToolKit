@@ -18,6 +18,10 @@ public class SettingsRepository {
 
     private final Application application;
     private final SharedPreferences preferences;
+    
+    public Application getApplication() {
+        return application;
+    }
 
     public SettingsRepository(@NonNull Application application) {
         this.application = application;

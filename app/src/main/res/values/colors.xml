@@ -1,15 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="brand_primary">#005B96</color>
-    <color name="brand_on_primary">#FFFFFFFF</color>
-    <color name="brand_secondary">#FF9800</color>
-    <color name="brand_on_secondary">#FFFFFFFF</color>
-    <color name="brand_tertiary">#4CAF50</color>
-    <color name="brand_surface">#FFFBFE</color>
-    <color name="brand_surface_variant">#E1F0FF</color>
-    <color name="brand_outline">#5F6B7A</color>
-    <color name="brand_background">#F4F6F9</color>
-    <color name="brand_inverse_on_surface">#1B1B1F</color>
-    <color name="brand_inverse_surface">#2F3136</color>
-    <color name="brand_error">#B00020</color>
+    <!-- Brand colors -->
+    <color name="brand_primary">#4285F4</color>
+    <color name="brand_on_primary">#FFFFFF</color>
+    <color name="brand_primary_container">#DCEAFF</color>
+    <color name="brand_on_primary_container">#001A3A</color>
+    
+    <color name="brand_secondary">#5C60A2</color>
+    <color name="brand_on_secondary">#FFFFFF</color>
+    <color name="brand_secondary_container">#E2E5FF</color>
+    <color name="brand_on_secondary_container">#181C4D</color>
+    
+    <!-- Additional brand colors -->
+    <color name="brand_tertiary">#705575</color>
+    <color name="brand_on_tertiary">#FFFFFF</color>
+    <color name="brand_tertiary_container">#FBD7FC</color>
+    <color name="brand_on_tertiary_container">#28132E</color>
+    
+    <color name="brand_surface">#F8F9FA</color>
+    <color name="brand_surface_variant">#E0E0E0</color>
+    <color name="brand_on_surface">#1C1B1F</color>
+    <color name="brand_on_surface_variant">#49454F</color>
+    <color name="brand_inverse_surface">#313033</color>
+    <color name="brand_inverse_on_surface">#F4EFF4</color>
+    
+    <color name="brand_outline">#79747E</color>
+    <color name="brand_outline_variant">#C9C5D0</color>
+    
+    <!-- Background colors -->
+    <color name="background_default">#FFFFFF</color>
+    <color name="background_surface">#F8F9FA</color>
+    
+    <!-- Text colors -->
+    <color name="text_primary">#1C1B1F</color>
+    <color name="text_secondary">#5F5E62</color>
+    <color name="text_tertiary">#8C8C90</color>
+    
+    <!-- Error colors -->
+    <color name="error">#BA1A1A</color>
+    <color name="on_error">#FFFFFF</color>
+    
+    <!-- Icon colors -->
+    <color name="icon_primary">#5F5E62</color>
+    <color name="icon_secondary">#8C8C90</color>
 </resources>
