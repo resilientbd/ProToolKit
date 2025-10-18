@@ -1,25 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme. -->
-    <style name="Theme.ProToolkit" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/brand_primary</item>
-        <item name="colorOnPrimary">@color/brand_on_primary</item>
-        <item name="colorPrimaryContainer">@color/brand_primary_container</item>
-        <item name="colorOnPrimaryContainer">@color/brand_on_primary_container</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/brand_secondary</item>
-        <item name="colorOnSecondary">@color/brand_on_secondary</item>
-        <item name="colorSecondaryContainer">@color/brand_secondary_container</item>
-        <item name="colorOnSecondaryContainer">@color/brand_on_secondary_container</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimary</item>
-        <!-- Customize your theme here. -->
-        <item name="android:windowBackground">@color/background_default</item>
-    </style>
-
-    <!-- Settings theme -->
-    <style name="Theme.ProToolkit.Settings" parent="Theme.ProToolkit">
-        <item name="android:windowBackground">@color/background_surface</item>
-    </style>
+    <!-- Empty styles file - all themes moved to themes.xml -->
 </resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Custom attributes for the application -->
+    <declare-styleable name="AppTheme">
+        <attr name="paddingScreen" format="dimension" />
+        <attr name="spacingLarge" format="dimension" />
+        <attr name="spacingMedium" format="dimension" />
+        <attr name="spacingSmall" format="dimension" />
+    </declare-styleable>
+</resources>

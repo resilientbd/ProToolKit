@@ -69,7 +69,7 @@ public class NetworkToolsViewModel extends BaseViewModel {
         inProgress.setValue(true);
         currentTest.setValue("Latency Test");
         
-        repository.measureLatency(url, new NetworkToolsRepository.LatencyCallback() {
+        repository.measureLatency(url, 4, 64, AppConstants.NETWORK_TIMEOUT_MS, new NetworkToolsRepository.LatencyCallback() {
             @Override
             public void onSuccess(int latency) {
                 latencyMs.postValue(latency);
@@ -100,7 +100,7 @@ public class NetworkToolsViewModel extends BaseViewModel {
             }
 
             @Override
-            public void onComplete(long downloadSpeedKBps) {
+            public void onComplete(long downloadSpeedKBps, long uploadSpeedKBps) {
                 downloadSpeed.postValue(downloadSpeedKBps);
                 inProgress.postValue(false);
                 currentTest.postValue("");
@@ -201,7 +201,7 @@ public class NetworkToolsViewModel extends BaseViewModel {
         inProgress.setValue(true);
         currentTest.setValue("Port Scan");
         
-        repository.performPortScan(host, new NetworkToolsRepository.PortScanCallback() {
+        repository.performPortScan(host, 1, 1024, AppConstants.NETWORK_TIMEOUT_MS, 50, new NetworkToolsRepository.PortScanCallback() {
             @Override
             public void onSuccess(String result) {
                 portScanResult.postValue(result);
@@ -276,10 +276,9 @@ public class NetworkToolsViewModel extends BaseViewModel {
         repository.cleanCache(new NetworkToolsRepository.LatencyCallback() {
             @Override
             public void onSuccess(int freedSpaceMB) {
-                // Show result in toast or update UI
-                postMessage("Cache cleaned successfully! Freed space: " + freedSpaceMB + " MB");
                 inProgress.postValue(false);
                 currentTest.postValue("");
+                postMessage("Cache cleaned successfully! Freed space: " + freedSpaceMB + " MB");
             }
 
             @Override
@@ -298,10 +297,9 @@ public class NetworkToolsViewModel extends BaseViewModel {
         repository.clearDownloads(new NetworkToolsRepository.LatencyCallback() {
             @Override
             public void onSuccess(int freedSpaceMB) {
-                // Show result in toast or update UI
-                postMessage("Downloads cleared successfully! Freed space: " + freedSpaceMB + " MB");
                 inProgress.postValue(false);
                 currentTest.postValue("");
+                postMessage("Downloads cleared successfully! Freed space: " + freedSpaceMB + " MB");
             }
 
             @Override
@@ -320,10 +318,9 @@ public class NetworkToolsViewModel extends BaseViewModel {
         repository.backupMedia(new NetworkToolsRepository.LatencyCallback() {
             @Override
             public void onSuccess(int backedUpSizeMB) {
-                // Show result in toast or update UI
-                postMessage("Media backup completed successfully! Backed up: " + backedUpSizeMB + " MB");
                 inProgress.postValue(false);
                 currentTest.postValue("");
+                postMessage("Media backup completed successfully! Backed up: " + backedUpSizeMB + " MB");
             }
 
             @Override

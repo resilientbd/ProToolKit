@@ -102,7 +102,6 @@
     <string name="label_ping_target">Target URL or IP</string>
     <string name="label_ping_placeholder">google.com</string>
     <string name="label_ping_now">Ping Now</string>
-    <string name="network_target_hint">Enter a URL, IP address, or hostname to measure latency.</string>
     <string name="network_card_title">Target host</string>
     <string name="network_result_title">Latest result</string>
     <string name="network_result_placeholder">No test run yet.</string>
@@ -164,4 +163,49 @@
     <string name="alert_ok">OK</string>
     <string name="alert_cancel">Cancel</string>
 
+    <!-- Enhanced Network Tools Strings -->
+    <string name="network_target_title">Network Target</string>
+    <string name="network_target_hint">Enter a URL, IP address, or hostname to test network connectivity</string>
+    <string name="network_basic_tests_title">Basic Network Tests</string>
+    <string name="network_advanced_tests_title">Advanced Network Tests</string>
+    <string name="network_basic_tests_hint">• Latency: Measure response time to server\n• Speed: Test download bandwidth\n• Connection: Verify network info\n• Ping: Test host reachability</string>
+    <string name="network_advanced_tests_hint">• DNS: Resolve domain names\n• Port Scan: Check open ports\n• Traceroute: Trace network path\n• Diagnostics: Run full network check</string>
+    <string name="label_dns_lookup">DNS Lookup</string>
+    <string name="label_port_scan">Port Scan</string>
+    <string name="label_traceroute">Traceroute</string>
+    <string name="label_network_diagnostics">Network Diagnostics</string>
+    <string name="label_network_test_in_progress">Running network test...</string>
+    <string name="label_dns_lookup_result">DNS Lookup Result: %1$s</string>
+    <string name="label_port_scan_result">Port Scan Result: %1$s</string>
+    <string name="label_traceroute_result">Traceroute Result: %1$s</string>
+    <string name="label_diagnostics_result">Diagnostics Result: %1$s</string>
+    <string name="network_test_in_progress">Measuring network performance…</string>
+    <string name="network_test_success">Network test completed.</string>
+    <string name="network_test_running">Running test...</string>
+    
+    <!-- File Management Strings -->
+    <string name="file_management_title">File Management Actions</string>
+    <string name="file_tools_clean_cache">Clean Cache</string>
+    <string name="file_tools_clear_downloads">Clear Downloads</string>
+    <string name="file_tools_backup_media">Backup Media Files</string>
+    <string name="file_management_hint">• Clean Cache: Remove temporary app files\n• Clear Downloads: Remove downloaded files\n• Backup Media: Save photos/videos to cloud</string>
+    
+    <!-- Network Diagnostics Strings -->
+    <string name="network_diagnostics_title">Network Diagnostics</string>
+    <string name="network_diagnostics_description">• Latency Test: Measures response time to a server\n• Speed Test: Tests download bandwidth\n• Ping Host: Tests if a host is reachable\n• Connection Check: Shows network information\n• DNS Lookup: Resolves domain names to IP addresses\n• Port Scan: Checks for open network ports\n• Traceroute: Shows the network path to a destination\n• Full Diagnostics: Runs all tests sequentially</string>
+    
+    <!-- Enhanced File Tools Strings -->
+    <string name="file_tools_storage_breakdown">Storage Breakdown</string>
+    <string name="file_tools_apps_data">Apps &amp; Data</string>
+    <string name="file_tools_images">Images</string>
+    <string name="file_tools_videos">Videos</string>
+    <string name="file_tools_audio">Audio</string>
+    <string name="file_tools_documents">Documents</string>
+    <string name="file_tools_downloads">Downloads</string>
+    <string name="file_tools_cleanup_suggestions">Cleanup Suggestions</string>
+    
+    <!-- Enhanced Device Info Strings -->
+    <string name="device_info_storage_summary">Storage Summary</string>
+    <string name="device_info_hardware_info">Hardware Information</string>
+    
 </resources>
