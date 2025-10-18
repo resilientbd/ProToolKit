@@ -16,3 +16,5 @@
 local.properties
 /.idea/.gitignore
 /keystore.properties
+/app/release/app-release.aab
+/protoolkit.jks
