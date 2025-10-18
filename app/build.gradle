@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.example.protoolkit'
+    namespace 'com.faisal.protoolkit'
     compileSdk 36
 
     defaultConfig {
