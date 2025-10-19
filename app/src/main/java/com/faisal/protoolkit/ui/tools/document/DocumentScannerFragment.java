@@ -56,7 +56,7 @@ public class DocumentScannerFragment extends BaseFragment {
     private GmsDocumentScanner documentScanner;
 
     private ActivityResultLauncher<String> requestPermissionLauncher;
-    private ActivityResultLauncher<Intent> documentScanLauncher;
+    private ActivityResultLauncher<IntentSenderRequest> documentScanLauncher;
 
     public DocumentScannerFragment() {
         super(R.layout.fragment_document_scanner);
@@ -84,29 +84,32 @@ public class DocumentScannerFragment extends BaseFragment {
                 
         // Create document scan launcher
         documentScanLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultContracts.StartIntentSenderForResult(),
             result -> {
-                if (result.getResultCode() == requireActivity().RESULT_OK && result.getData() != null) {
-                    GmsDocumentScanningResult scanningResult =
-                        GmsDocumentScanningResult.fromActivityResultIntent(result.getData());
-                    
-                    if (scanningResult != null) {
+                if (result.getResultCode() == requireActivity().RESULT_OK) {
+                    Intent data = result.getData();
+                    if (data != null) {
+                        GmsDocumentScanningResult scanningResult =
+                            GmsDocumentScanningResult.fromActivityResultIntent(data);
+                        
+                        if (scanningResult != null) {
 
-                        for (GmsDocumentScanningResult.Page page : scanningResult.getPages()) {
-                           // Uri imageUri = pages.get(0).getImageUri();
-                            page.getImageUri();
-                           try{
-                             Bitmap bitmap =  ImageUtils.getBitmapFromUri(getActivity().getBaseContext(),page.getImageUri());
-                             addScannedDocument(bitmap);
-                           }catch (Exception e)
-                           {
-                               e.printStackTrace();
-                           }
-                        }
+                            for (GmsDocumentScanningResult.Page page : scanningResult.getPages()) {
+                               // Uri imageUri = pages.get(0).getImageUri();
+                                page.getImageUri();
+                               try{
+                                 Bitmap bitmap =  ImageUtils.getBitmapFromUri(getActivity().getBaseContext(),page.getImageUri());
+                                 addScannedDocument(bitmap);
+                               }catch (Exception e)
+                               {
+                                   e.printStackTrace();
+                               }
+                            }
 //                        List<Bitmap> bitmaps = scanningResult.getBitmaps();
 //                        for (Bitmap bitmap : bitmaps) {
 //                            addScannedDocument(bitmap);
 //                        }
+                        }
                     }
                 }
             });
@@ -189,8 +192,15 @@ public class DocumentScannerFragment extends BaseFragment {
 
     private void startDocumentScanning() {
         documentScanner.getStartScanIntent(requireActivity())
-//            .addOnSuccessListener(intent -> documentScanLauncher.launch(intent))
-            .addOnSuccessListener(intent -> new IntentSenderRequest.Builder(intent).build())
+            .addOnSuccessListener(intentSender -> {
+                try {
+                    documentScanLauncher.launch(new IntentSenderRequest.Builder(intentSender).build());
+                } catch (Exception e) {
+                    Toast.makeText(requireContext(), 
+                            "Error launching document scanner: " + e.getMessage(), 
+                            Toast.LENGTH_LONG).show();
+                }
+            })
             .addOnFailureListener(e -> {
                 Toast.makeText(requireContext(), 
                         "Document scanner launch failed: " + e.getMessage(), 

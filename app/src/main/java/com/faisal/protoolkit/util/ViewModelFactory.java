@@ -22,6 +22,7 @@ import com.faisal.protoolkit.ui.tools.network.NetworkToolsViewModel;
 import com.faisal.protoolkit.ui.tools.qr.QrScannerViewModel;
 import com.faisal.protoolkit.ui.tools.text.TextToolsViewModel;
 import com.faisal.protoolkit.ui.tools.unit.UnitConverterViewModel;
+import com.faisal.protoolkit.ui.tools.document.DocumentScannerViewModel;
 
 /**
  * Central ViewModel factory wiring repositories.
@@ -78,6 +79,8 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
             return (T) new QrScannerViewModel(settingsRepository);
         } else if (modelClass.isAssignableFrom(SettingsViewModel.class)) {
             return (T) new SettingsViewModel(settingsRepository);
+        } else if (modelClass.isAssignableFrom(DocumentScannerViewModel.class)) {
+            return (T) new DocumentScannerViewModel(application);
         }
         throw new IllegalArgumentException("Unknown ViewModel class: " + modelClass.getName());
     }
