@@ -1,17 +1,22 @@
 package com.faisal.protoolkit.ui.tools.document.adapters;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
+import com.bumptech.glide.Glide;
 import com.faisal.protoolkit.R;
 import com.faisal.protoolkit.data.entities.PageEntity;
 import com.faisal.protoolkit.ui.tools.document.viewmodels.DocumentDetailViewModel;
+import java.io.File;
 
 public class PageAdapter extends ListAdapter<PageEntity, PageAdapter.PageViewHolder> {
     private final DocumentDetailViewModel viewModel;
@@ -21,10 +26,20 @@ public class PageAdapter extends ListAdapter<PageEntity, PageAdapter.PageViewHol
         void onPageClick(PageEntity page);
     }
 
+    public interface OnPageLongClickListener {
+        void onPageLongClick(PageEntity page, int position);
+    }
+
+    private OnPageLongClickListener longClickListener;
+
     public PageAdapter(DocumentDetailViewModel viewModel, OnPageClickListener listener) {
         super(DIFF_CALLBACK);
         this.viewModel = viewModel;
         this.listener = listener;
+    }
+
+    public void setOnPageLongClickListener(OnPageLongClickListener longClickListener) {
+        this.longClickListener = longClickListener;
     }
 
     private static final DiffUtil.ItemCallback<PageEntity> DIFF_CALLBACK = 
@@ -37,7 +52,8 @@ public class PageAdapter extends ListAdapter<PageEntity, PageAdapter.PageViewHol
             @Override
             public boolean areContentsTheSame(@NonNull PageEntity oldItem, @NonNull PageEntity newItem) {
                 return oldItem.index == newItem.index && 
-                       oldItem.uri_original.equals(newItem.uri_original);
+                       oldItem.uri_original.equals(newItem.uri_original) &&
+                       oldItem.updated_at == newItem.updated_at;
             }
         };
 
@@ -70,16 +86,32 @@ public class PageAdapter extends ListAdapter<PageEntity, PageAdapter.PageViewHol
                     listener.onPageClick(getItem(position));
                 }
             });
+
+            itemView.setOnLongClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && longClickListener != null) {
+                    longClickListener.onPageLongClick(getItem(position), position);
+                    return true;
+                }
+                return false;
+            });
         }
 
         void bind(PageEntity page) {
             indexTextView.setText(String.valueOf(page.index + 1)); // Display 1-based index
             
-            // Load thumbnail - in a real implementation, you would load the page thumbnail
-            // GlideApp.with(itemView.getContext())
-            //         .load(page.uri_original)
-            //         .placeholder(R.drawable.placeholder_page)
-            //         .into(thumbnailImageView);
+            // Load thumbnail from the original URI
+            if (page.uri_original != null && !page.uri_original.isEmpty()) {
+                // For local files, we can use Glide to load them
+                Glide.with(itemView.getContext())
+                        .load(new File(page.uri_original))
+                        .placeholder(R.drawable.placeholder_page) // Use a placeholder while loading
+                        .error(R.drawable.placeholder_page) // Use error drawable if loading fails
+                        .into(thumbnailImageView);
+            } else {
+                // Set a default placeholder if no URI is available
+                thumbnailImageView.setImageResource(R.drawable.placeholder_page);
+            }
         }
     }
 }

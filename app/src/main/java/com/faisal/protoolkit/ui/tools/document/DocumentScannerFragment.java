@@ -137,11 +137,47 @@ public class DocumentScannerFragment extends BaseFragment {
         binding = FragmentDocumentScannerBinding.bind(view);
         viewModel = new ViewModelProvider(this, new DocumentsViewModel.Factory(database)).get(DocumentsViewModel.class);
         
+        // Check if we're loading a specific document (e.g., from document detail)
+        String documentId = getArguments() != null ? getArguments().getString("document_id") : null;
+        if (documentId != null) {
+            // Load specific document for editing
+            this.currentDocumentId = documentId; // Set the current document ID for editing
+            openDocumentForEditing(documentId);
+        } else {
+            setupToolbar();
+            setupRecyclerView();
+            setupButtons();
+            setupObservers();
+            setupFAB();
+        }
+    }
+    
+    private void openDocumentForEditing(String documentId) {
+        // Load the specific document with its existing pages for editing
         setupToolbar();
         setupRecyclerView();
         setupButtons();
         setupObservers();
         setupFAB();
+        
+        // Load the document and its pages in the background
+        new Thread(() -> {
+            DocumentEntity doc = database.documentDao().getDocumentById(documentId);
+            if (doc != null) {
+                List<PageEntity> pages = database.pageDao().getPagesByDocumentSync(documentId);
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "Editing: " + doc.title + " (" + pages.size() + " pages)", Toast.LENGTH_LONG).show();
+                    
+                    // Update the UI to show this document is being edited
+                    // This will trigger the observers to update the RecyclerView
+                    viewModel.refreshDocuments(); 
+                    
+                    // Update UI for editing mode if needed
+                    binding.btnScan.setText("Add Pages");
+                    binding.btnSave.setText("Update Doc");
+                });
+            }
+        }).start();
     }
     
     private void setupFAB() {
@@ -176,11 +212,11 @@ public class DocumentScannerFragment extends BaseFragment {
     }
 
     private void setupButtons() {
-        // Rename the scan button to be more appropriate for document list
+        // Initially set the scan button to create new documents
         binding.btnScan.setText("New Document");
         binding.btnScan.setOnClickListener(v -> startNewDocument());
         
-        // Rename export button to something more appropriate
+        // Initially set save button to manage documents
         binding.btnSave.setText("Manage");
         binding.btnSave.setOnClickListener(v -> {
             // Show options for managing documents
@@ -365,9 +401,11 @@ public class DocumentScannerFragment extends BaseFragment {
         binding.btnSave.setEnabled(false);
         binding.btnSave.setText("Saving...");
         
+        String docId = currentDocumentId != null ? currentDocumentId : UUID.randomUUID().toString();
+        
         // Create or update document in database
         DocumentEntity document = new DocumentEntity(
-            currentDocumentId,
+            docId,
             title,
             null, // folder_id - null for root
             scannedPages.size(),
@@ -381,7 +419,7 @@ public class DocumentScannerFragment extends BaseFragment {
         new Thread(() -> {
             try {
                 // Check if document already exists, if so, update it instead of inserting
-                DocumentEntity existingDoc = database.documentDao().getDocumentById(currentDocumentId);
+                DocumentEntity existingDoc = database.documentDao().getDocumentById(docId);
                 
                 if (existingDoc != null) {
                     // Update existing document
@@ -393,15 +431,15 @@ public class DocumentScannerFragment extends BaseFragment {
                 
                 // Insert or update pages
                 // First, delete existing pages for this document to avoid duplicates
-                database.pageDao().deletePagesByDocument(currentDocumentId);
+                database.pageDao().deletePagesByDocument(docId);
                 
                 for (int i = 0; i < scannedPages.size(); i++) {
                     String pageId = UUID.randomUUID().toString();
-                    File originalFile = fileManager.getOriginalImageFile(currentDocumentId, i);
+                    File originalFile = fileManager.getOriginalImageFile(docId, i);
                     
                     PageEntity page = new PageEntity(
                         pageId,
-                        currentDocumentId,
+                        docId,
                         i, // index
                         originalFile.getAbsolutePath(), // uri_original
                         null, // uri_render
@@ -418,7 +456,7 @@ public class DocumentScannerFragment extends BaseFragment {
                 
                 // Update document metadata
                 database.documentDao().updateDocumentMetadata(
-                    currentDocumentId,
+                    docId,
                     scannedPages.size(),
                     0,
                     System.currentTimeMillis()
@@ -476,5 +514,16 @@ public class DocumentScannerFragment extends BaseFragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+    
+    @Override
+    public void onResume() {
+        super.onResume();
+        // If this fragment was opened for editing a specific document, 
+        // override back press behavior to go directly to document list instead of back to document detail
+        if (currentDocumentId != null && getParentFragmentManager() != null) {
+            // We can't override onBackPress directly in fragment, 
+            // so the back behavior will follow normal navigation
+        }
     }
 }

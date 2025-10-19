@@ -1,26 +1,56 @@
 package com.faisal.protoolkit.ui.tools.document;
 
+import android.Manifest;
+import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.faisal.protoolkit.R;
 import com.faisal.protoolkit.databinding.FragmentDocumentDetailBinding;
 import com.faisal.protoolkit.data.database.AppDatabase;
+import com.faisal.protoolkit.data.entities.PageEntity;
 import com.faisal.protoolkit.ui.tools.document.adapters.PageAdapter;
 import com.faisal.protoolkit.ui.tools.document.viewmodels.DocumentDetailViewModel;
+import com.faisal.protoolkit.util.FileManager;
+import com.faisal.protoolkit.util.ImageUtils;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanner;
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions;
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanning;
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.List;
+import java.util.UUID;
 
 public class DocumentDetailFragment extends Fragment {
     private FragmentDocumentDetailBinding binding;
     private DocumentDetailViewModel viewModel;
     private PageAdapter adapter;
+    private String documentId;
+    private AppDatabase database;
+    private FileManager fileManager;
+    private GmsDocumentScanner documentScanner;
+    private ActivityResultLauncher<String> requestPermissionLauncher;
+    private ActivityResultLauncher<IntentSenderRequest> documentScanLauncher;
 
     public static DocumentDetailFragment newInstance(String documentId) {
         DocumentDetailFragment fragment = new DocumentDetailFragment();
@@ -28,6 +58,39 @@ public class DocumentDetailFragment extends Fragment {
         args.putString("document_id", documentId);
         fragment.setArguments(args);
         return fragment;
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        database = AppDatabase.getDatabase(requireContext());
+        fileManager = new FileManager(requireContext());
+
+        GmsDocumentScannerOptions options = new GmsDocumentScannerOptions.Builder()
+                .setGalleryImportAllowed(true)
+                .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG,
+                        GmsDocumentScannerOptions.RESULT_FORMAT_PDF)
+                .build();
+        documentScanner = GmsDocumentScanning.getClient(options);
+
+        requestPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                this::handleCameraPermissionResult
+        );
+
+        documentScanLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartIntentSenderForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        GmsDocumentScanningResult scanningResult =
+                                GmsDocumentScanningResult.fromActivityResultIntent(result.getData());
+                        if (scanningResult != null) {
+                            handleScanResult(scanningResult);
+                        }
+                    }
+                }
+        );
     }
 
     @Nullable
@@ -41,13 +104,14 @@ public class DocumentDetailFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
-        String documentId = getArguments() != null ? getArguments().getString("document_id") : null;
+        documentId = getArguments() != null ? getArguments().getString("document_id") : null;
         if (documentId == null) {
             // Handle error - documentId is required
+            Toast.makeText(requireContext(), "Document ID is required", Toast.LENGTH_SHORT).show();
+            requireActivity().onBackPressed();
             return;
         }
         
-        AppDatabase database = AppDatabase.getDatabase(requireContext());
         viewModel = new ViewModelProvider(this, new DocumentDetailViewModel.Factory(database))
                 .get(DocumentDetailViewModel.class);
         viewModel.setDocumentId(documentId);
@@ -71,25 +135,23 @@ public class DocumentDetailFragment extends Fragment {
 
     private void setupRecyclerView() {
         adapter = new PageAdapter(viewModel, page -> {
-            // Navigate to editor for this page
-            // TODO: Implement navigation to EditorFragment
+            // Show options for the page - redirect to document scanner for actual editing
+            Toast.makeText(requireContext(), "Page " + (page.index + 1) + " selected", Toast.LENGTH_SHORT).show();
         });
         
         binding.pagesRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false));
         binding.pagesRecyclerView.setAdapter(adapter);
-        
-        // Setup drag and drop for reordering
+
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.Callback() {
             @Override
             public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
                 int dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN;
-                int swipeFlags = 0; // No swipe for pages
+                int swipeFlags = 0;
                 return makeMovementFlags(dragFlags, swipeFlags);
             }
 
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                // Handle item move
                 int fromPosition = viewHolder.getAdapterPosition();
                 int toPosition = target.getAdapterPosition();
                 viewModel.reorderPage(fromPosition, toPosition);
@@ -98,10 +160,10 @@ public class DocumentDetailFragment extends Fragment {
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                // No swipe for pages
+                // No swipe actions for pages
             }
         });
-        
+
         itemTouchHelper.attachToRecyclerView(binding.pagesRecyclerView);
     }
 
@@ -112,20 +174,172 @@ public class DocumentDetailFragment extends Fragment {
     }
 
     private void setupButtons() {
-        binding.fabAddPage.setOnClickListener(v -> {
-            // Add a new page to the document
-            // TODO: Implement adding new page
-        });
-        
+        binding.fabAddPage.setOnClickListener(v -> startEditingDocument());
+
+        binding.btnEdit.setOnClickListener(v -> startEditingDocument());
+
         binding.btnExport.setOnClickListener(v -> {
-            // Show export options
-            // TODO: Implement export functionality
+            Toast.makeText(requireContext(), "Export functionality is in the document scanner", Toast.LENGTH_SHORT).show();
         });
-        
-        binding.btnShare.setOnClickListener(v -> {
-            // Share the document
-            // TODO: Implement share functionality
-        });
+    }
+
+    private void startEditingDocument() {
+        if (documentId == null) {
+            Toast.makeText(requireContext(), "Unable to edit: document not found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (hasCameraPermission()) {
+            startDocumentScanning();
+        } else {
+            requestCameraPermission();
+        }
+    }
+
+    private boolean hasCameraPermission() {
+        return ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestCameraPermission() {
+        if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Camera Permission Required")
+                    .setMessage("This app needs camera access to scan documents. Please grant permission to continue.")
+                    .setPositiveButton("Grant Permission", (dialog, which) ->
+                            requestPermissionLauncher.launch(Manifest.permission.CAMERA))
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        } else {
+            requestPermissionLauncher.launch(Manifest.permission.CAMERA);
+        }
+    }
+
+    private void handleCameraPermissionResult(boolean isGranted) {
+        if (isGranted) {
+            startDocumentScanning();
+        } else {
+            Toast.makeText(requireContext(), "Camera permission denied. Cannot scan documents.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void startDocumentScanning() {
+        if (documentScanner == null) {
+            Toast.makeText(requireContext(), "Document scanner is not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        documentScanner.getStartScanIntent(requireActivity())
+                .addOnSuccessListener(intentSender -> {
+                    try {
+                        documentScanLauncher.launch(new IntentSenderRequest.Builder(intentSender).build());
+                    } catch (Exception e) {
+                        Toast.makeText(requireContext(),
+                                "Error launching document scanner: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                })
+                .addOnFailureListener(e -> Toast.makeText(requireContext(),
+                        "Document scanner launch failed: " + e.getMessage(),
+                        Toast.LENGTH_LONG).show());
+    }
+
+    private void handleScanResult(GmsDocumentScanningResult scanningResult) {
+        if (documentId == null) {
+            return;
+        }
+
+        final List<GmsDocumentScanningResult.Page> pages = scanningResult.getPages();
+        if (pages == null || pages.isEmpty()) {
+            Toast.makeText(requireContext(), "No pages captured", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final android.content.Context appContext = requireContext().getApplicationContext();
+
+        new Thread(() -> {
+            int addedCount = 0;
+
+            try {
+                fileManager.createDocumentDir(documentId);
+                Integer maxIndex = database.pageDao().getMaxPageIndex(documentId);
+                int baseIndex = maxIndex != null ? maxIndex + 1 : 0;
+
+                for (int i = 0; i < pages.size(); i++) {
+                    GmsDocumentScanningResult.Page page = pages.get(i);
+                    try {
+                        Bitmap bitmap = ImageUtils.getBitmapFromUri(appContext, page.getImageUri());
+                        if (bitmap == null) {
+                            continue;
+                        }
+
+                        int targetIndex = baseIndex + addedCount;
+                        File originalFile = fileManager.getOriginalImageFile(documentId, targetIndex);
+                        File parentDir = originalFile.getParentFile();
+                        if (parentDir != null && !parentDir.exists()) {
+                            parentDir.mkdirs();
+                        }
+
+                        try (FileOutputStream out = new FileOutputStream(originalFile)) {
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out);
+                        }
+
+                        PageEntity pageEntity = new PageEntity(
+                                UUID.randomUUID().toString(),
+                                documentId,
+                                targetIndex,
+                                originalFile.getAbsolutePath(),
+                                null,
+                                null,
+                                bitmap.getWidth(),
+                                bitmap.getHeight(),
+                                300,
+                                null,
+                                false
+                        );
+
+                        database.pageDao().insertPage(pageEntity);
+                        addedCount++;
+
+                        if (!bitmap.isRecycled()) {
+                            bitmap.recycle();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                if (addedCount > 0) {
+                    int pageCount = database.pageDao().getPagesByDocumentSync(documentId).size();
+                    database.documentDao().updateDocumentMetadata(
+                            documentId,
+                            pageCount,
+                            0,
+                            System.currentTimeMillis()
+                    );
+
+                    requireActivity().runOnUiThread(() -> {
+//                        Toast.makeText(requireContext(),
+//                                "Added " + addedCount + " page(s)",
+//                                Toast.LENGTH_SHORT).show();
+                        viewModel.refresh();
+                    });
+                } else {
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(),
+                                    "No new pages were added",
+                                    Toast.LENGTH_SHORT).show());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                requireActivity().runOnUiThread(() ->
+                        Toast.makeText(requireContext(),
+                                "Error adding pages: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show());
+            }
+        }).start();
     }
 
     @Override

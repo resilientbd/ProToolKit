@@ -12,6 +12,10 @@ public class ImageFilters {
      * Applies contrast and brightness adjustments to a bitmap
      */
     public static Bitmap applyContrastBrightness(Bitmap source, float contrast, float brightness) {
+        if (source == null || source.isRecycled()) {
+            return source;
+        }
+        
         Bitmap result = Bitmap.createBitmap(source.getWidth(), source.getHeight(), source.getConfig());
         
         ColorMatrix colorMatrix = new ColorMatrix();
@@ -47,6 +51,10 @@ public class ImageFilters {
      * Converts bitmap to grayscale
      */
     public static Bitmap toGrayscale(Bitmap source) {
+        if (source == null || source.isRecycled()) {
+            return source;
+        }
+        
         Bitmap result = Bitmap.createBitmap(source.getWidth(), source.getHeight(), source.getConfig());
         
         ColorMatrix colorMatrix = new ColorMatrix();
@@ -65,6 +73,10 @@ public class ImageFilters {
      * Converts bitmap to black and white using a simple threshold
      */
     public static Bitmap toBlackAndWhite(Bitmap source, float threshold) {
+        if (source == null || source.isRecycled()) {
+            return source;
+        }
+        
         int width = source.getWidth();
         int height = source.getHeight();
         Bitmap result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -100,7 +112,11 @@ public class ImageFilters {
         // Basic sharpening using a convolution matrix
         // This is a simplified approach - for better results, OpenCV would be needed
         
-        if (amount <= 0) return source; // No sharpening needed
+        if (source == null || source.isRecycled()) {
+            return source;
+        }
+        
+        if (amount <= 0) return source.copy(source.getConfig(), true); // No sharpening needed, return copy
         
         Bitmap result = Bitmap.createBitmap(source.getWidth(), source.getHeight(), source.getConfig());
         Canvas canvas = new Canvas(result);
@@ -135,6 +151,10 @@ public class ImageFilters {
      * Color boost filter - enhances colors
      */
     public static Bitmap applyColorBoost(Bitmap source) {
+        if (source == null || source.isRecycled()) {
+            return source;
+        }
+        
         Bitmap result = Bitmap.createBitmap(source.getWidth(), source.getHeight(), source.getConfig());
         
         ColorMatrix colorMatrix = new ColorMatrix();

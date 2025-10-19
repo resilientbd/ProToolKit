@@ -42,20 +42,20 @@
             android:padding="8dp">
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_export"
+                android:id="@+id/btn_edit"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
-                android:text="Export" />
+                android:text="Edit Document" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_share"
+                android:id="@+id/btn_export"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
-                android:text="Share" />
+                android:text="Export" />
 
         </LinearLayout>
 

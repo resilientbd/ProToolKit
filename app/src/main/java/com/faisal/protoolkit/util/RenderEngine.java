@@ -137,6 +137,54 @@ public class RenderEngine {
         }
     }
     
+    public Bitmap applyFilters(Bitmap originalBitmap, EditOps editOps) {
+        if (originalBitmap == null) {
+            return null;
+        }
+        
+        if (editOps == null) {
+            return originalBitmap.copy(originalBitmap.getConfig(), true);
+        }
+        
+        // Clone the bitmap to avoid modifying the original
+        Bitmap bitmap = originalBitmap.copy(originalBitmap.getConfig(), true);
+        
+        Bitmap result = bitmap; // Keep original reference to recycle later
+        
+        try {
+            // Apply rotation
+            if (editOps.rotate != 0) {
+                result = rotateBitmap(result, editOps.rotate);
+            }
+            
+            // Apply filter operations
+            result = ImageFilters.applyFilter(result, editOps);
+            
+            // Apply crop operations if available
+            if (editOps.hasCrop()) {
+                result = cropBitmap(result, editOps);
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Return original bitmap if processing fails
+            if (result != bitmap) {
+                // If we created a new bitmap in processing, recycle it
+                if (result != originalBitmap && result != bitmap) {
+                    result.recycle();
+                }
+            }
+            return originalBitmap.copy(originalBitmap.getConfig(), true);
+        }
+        
+        // If the result is not the original bitmap we copied, recycle the original copy
+        if (result != bitmap) {
+            bitmap.recycle();
+        }
+        
+        return result;
+    }
+    
     private Bitmap applyEditOps(Bitmap bitmap, EditOps editOps, boolean isFinalRender) {
         if (editOps == null) {
             return bitmap;

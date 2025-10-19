@@ -22,6 +22,7 @@
     <string name="label_qr_scanner">QR &amp; Barcode</string>
     <string name="label_doc_scanner">Document Scanner</string>
     <string name="label_document_detail">Document Details</string>
+    <string name="label_page_editor">Page Editor</string>
     <string name="page_count">%d pages</string>
     <string name="label_file_tools">File Tools</string>
     <string name="label_network_tools">Network Tools</string>

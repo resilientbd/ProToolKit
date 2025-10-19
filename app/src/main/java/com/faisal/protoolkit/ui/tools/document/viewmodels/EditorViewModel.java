@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 import com.faisal.protoolkit.data.database.AppDatabase;
+import com.faisal.protoolkit.data.entities.PageEntity;
 import com.faisal.protoolkit.model.EditOps;
 import com.faisal.protoolkit.util.RenderEngine;
 
@@ -16,6 +17,7 @@ public class EditorViewModel extends ViewModel {
     private EditOps currentEditOps;
     private final AppDatabase database;
     private final RenderEngine renderEngine;
+    private Bitmap originalBitmap;
 
     public EditorViewModel(AppDatabase database, RenderEngine renderEngine) {
         this.database = database;
@@ -39,6 +41,12 @@ public class EditorViewModel extends ViewModel {
 
     public LiveData<Bitmap> getPagePreview() {
         return pagePreview;
+    }
+
+    public void updateOriginalBitmap(Bitmap bitmap) {
+        this.originalBitmap = bitmap;
+        // Set the original bitmap as the preview initially
+        pagePreview.setValue(bitmap);
     }
 
     public void updateFilterMode(String mode) {
@@ -84,13 +92,15 @@ public class EditorViewModel extends ViewModel {
     }
 
     private void updatePreview() {
-        // In a real implementation, you would render the preview with the current edits
-        String docId = documentId.getValue();
-        Integer pageNum = pageIndex.getValue();
-        
-        if (docId != null && pageNum != null) {
-            // Render the preview with current edit ops
-            // This would be done on a background thread
+        // Render the preview with the current edits if we have the original bitmap
+        if (originalBitmap != null && !originalBitmap.isRecycled()) {
+            // Render the preview with current edit ops on a background thread
+            new Thread(() -> {
+                // Create a copy of the original bitmap to avoid recycling issues
+                Bitmap bitmapCopy = originalBitmap.copy(originalBitmap.getConfig(), true);
+                Bitmap processedBitmap = renderEngine.applyFilters(bitmapCopy, currentEditOps);
+                pagePreview.postValue(processedBitmap);
+            }).start();
         }
     }
 
@@ -100,11 +110,17 @@ public class EditorViewModel extends ViewModel {
         Integer pageNum = pageIndex.getValue();
         
         if (docId != null && pageNum != null && currentEditOps != null) {
-            // Save to database
-            String editOpsJson = com.faisal.protoolkit.util.EditOpsUtil.serialize(currentEditOps);
-            
-            // In a real implementation, you would update the database
-            // and save the edit ops to the file system
+            // Get the page from the database
+            PageEntity page = database.pageDao().getPageByDocumentAndIndex(docId, pageNum);
+            if (page != null) {
+                // Serialize edit operations
+                String editOpsJson = com.faisal.protoolkit.util.EditOpsUtil.serialize(currentEditOps);
+                
+                // Update the page in database
+                page.edit_ops_json = editOpsJson;
+                page.updated_at = System.currentTimeMillis();
+                database.pageDao().updatePage(page);
+            }
         }
     }
 

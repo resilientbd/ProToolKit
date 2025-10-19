@@ -44,6 +44,9 @@ public interface PageDao {
     @Query("UPDATE pages SET `index` = :index1 WHERE id = :id2")
     void updatePageIndexById2(String id2, int index1);
 
+    @Query("SELECT * FROM pages WHERE document_id = :documentId AND `index` = :pageIndex LIMIT 1")
+    PageEntity getPageByDocumentAndIndex(String documentId, int pageIndex);
+    
     @Query("SELECT MAX(`index`) FROM pages WHERE document_id = :documentId")
     Integer getMaxPageIndex(String documentId);
 }
