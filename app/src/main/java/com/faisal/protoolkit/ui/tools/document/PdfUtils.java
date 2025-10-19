@@ -50,26 +50,38 @@ public class PdfUtils {
                 // Start a page
                 PdfDocument.Page page = pdfDocument.startPage(pageInfo);
                 
-                Canvas canvas = page.getCanvas();
-                Paint paint = new Paint();
-                
-                // Calculate scaling to fit bitmap to page while maintaining aspect ratio
-                float scaleWidth = ((float) pageWidth) / bitmap.getWidth();
-                float scaleHeight = ((float) pageHeight) / bitmap.getHeight();
-                float scale = Math.min(scaleWidth, scaleHeight);
-                
-                // Calculate position to center the bitmap on the page
-                float scaledWidth = bitmap.getWidth() * scale;
-                float scaledHeight = bitmap.getHeight() * scale;
-                float x = (pageWidth - scaledWidth) / 2;
-                float y = (pageHeight - scaledHeight) / 2;
-                
-                // Draw the bitmap onto the canvas
-                canvas.drawBitmap(bitmap, null, 
-                    new android.graphics.RectF(x, y, x + scaledWidth, y + scaledHeight), paint);
-                
-                // Finish the page
-                pdfDocument.finishPage(page);
+                try {
+                    Canvas canvas = page.getCanvas();
+                    Paint paint = new Paint();
+                    
+                    // Convert hardware bitmap to software bitmap if needed
+                    Bitmap softwareBitmap = bitmap;
+                    if (bitmap.getConfig() == null) {
+                        // If bitmap config is null, create a new ARGB_8888 bitmap
+                        softwareBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                    } else if (bitmap.getConfig() != Bitmap.Config.ARGB_8888) {
+                        // Create a new bitmap with ARGB_8888 config for compatibility
+                        softwareBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                    }
+                    
+                    // Calculate scaling to fit bitmap to page while maintaining aspect ratio
+                    float scaleWidth = ((float) pageWidth) / softwareBitmap.getWidth();
+                    float scaleHeight = ((float) pageHeight) / softwareBitmap.getHeight();
+                    float scale = Math.min(scaleWidth, scaleHeight);
+                    
+                    // Calculate position to center the bitmap on the page
+                    float scaledWidth = softwareBitmap.getWidth() * scale;
+                    float scaledHeight = softwareBitmap.getHeight() * scale;
+                    float x = (pageWidth - scaledWidth) / 2;
+                    float y = (pageHeight - scaledHeight) / 2;
+                    
+                    // Draw the bitmap onto the canvas
+                    canvas.drawBitmap(softwareBitmap, null, 
+                        new android.graphics.RectF(x, y, x + scaledWidth, y + scaledHeight), paint);
+                } finally {
+                    // Make sure to finish the page even if an exception occurs during drawing
+                    pdfDocument.finishPage(page);
+                }
             }
             
             // Create the output file
@@ -83,7 +95,6 @@ public class PdfUtils {
             // Write the document content
             FileOutputStream fos = new FileOutputStream(pdfFile);
             pdfDocument.writeTo(fos);
-            pdfDocument.close();
             fos.close();
             
             return pdfFile;
@@ -126,26 +137,38 @@ public class PdfUtils {
                 // Start a page
                 PdfDocument.Page page = pdfDocument.startPage(pageInfo);
                 
-                Canvas canvas = page.getCanvas();
-                Paint paint = new Paint();
-                
-                // Calculate scaling to fit bitmap to page while maintaining aspect ratio
-                float scaleWidth = ((float) pageWidth) / bitmap.getWidth();
-                float scaleHeight = ((float) pageHeight) / bitmap.getHeight();
-                float scale = Math.min(scaleWidth, scaleHeight);
-                
-                // Calculate position to center the bitmap on the page
-                float scaledWidth = bitmap.getWidth() * scale;
-                float scaledHeight = bitmap.getHeight() * scale;
-                float x = (pageWidth - scaledWidth) / 2;
-                float y = (pageHeight - scaledHeight) / 2;
-                
-                // Draw the bitmap onto the canvas
-                canvas.drawBitmap(bitmap, null, 
-                    new android.graphics.RectF(x, y, x + scaledWidth, y + scaledHeight), paint);
-                
-                // Finish the page
-                pdfDocument.finishPage(page);
+                try {
+                    Canvas canvas = page.getCanvas();
+                    Paint paint = new Paint();
+                    
+                    // Convert hardware bitmap to software bitmap if needed
+                    Bitmap softwareBitmap = bitmap;
+                    if (bitmap.getConfig() == null) {
+                        // If bitmap config is null, create a new ARGB_8888 bitmap
+                        softwareBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                    } else if (bitmap.getConfig() != Bitmap.Config.ARGB_8888) {
+                        // Create a new bitmap with ARGB_8888 config for compatibility
+                        softwareBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                    }
+                    
+                    // Calculate scaling to fit bitmap to page while maintaining aspect ratio
+                    float scaleWidth = ((float) pageWidth) / softwareBitmap.getWidth();
+                    float scaleHeight = ((float) pageHeight) / softwareBitmap.getHeight();
+                    float scale = Math.min(scaleWidth, scaleHeight);
+                    
+                    // Calculate position to center the bitmap on the page
+                    float scaledWidth = softwareBitmap.getWidth() * scale;
+                    float scaledHeight = softwareBitmap.getHeight() * scale;
+                    float x = (pageWidth - scaledWidth) / 2;
+                    float y = (pageHeight - scaledHeight) / 2;
+                    
+                    // Draw the bitmap onto the canvas
+                    canvas.drawBitmap(softwareBitmap, null, 
+                        new android.graphics.RectF(x, y, x + scaledWidth, y + scaledHeight), paint);
+                } finally {
+                    // Make sure to finish the page even if an exception occurs during drawing
+                    pdfDocument.finishPage(page);
+                }
             }
             
             // Create the output file
@@ -159,7 +182,6 @@ public class PdfUtils {
             // Write the document content
             FileOutputStream fos = new FileOutputStream(pdfFile);
             pdfDocument.writeTo(fos);
-            pdfDocument.close();
             fos.close();
             
             return pdfFile;
