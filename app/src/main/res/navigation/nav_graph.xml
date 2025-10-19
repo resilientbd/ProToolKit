@@ -62,6 +62,20 @@
         android:id="@+id/documentScannerFragment"
         android:name="com.faisal.protoolkit.ui.tools.document.DocumentScannerFragment"
         android:label="@string/label_doc_scanner"
-        tools:layout="@layout/fragment_document_scanner" />
+        tools:layout="@layout/fragment_document_scanner">
+        <action
+            android:id="@+id/action_documentScannerFragment_to_documentDetailFragment"
+            app:destination="@id/documentDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/documentDetailFragment"
+        android:name="com.faisal.protoolkit.ui.tools.document.DocumentDetailFragment"
+        android:label="@string/label_document_detail"
+        tools:layout="@layout/fragment_document_detail">
+        <argument
+            android:name="document_id"
+            app:argType="string" />
+    </fragment>
 
 </navigation>

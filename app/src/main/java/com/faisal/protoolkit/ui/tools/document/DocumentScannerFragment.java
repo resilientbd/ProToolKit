@@ -1,14 +1,17 @@
 package com.faisal.protoolkit.ui.tools.document;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.TextUtils;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -19,41 +22,55 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.navigation.fragment.NavHostFragment;
 
 import com.faisal.protoolkit.BuildConfig;
 import com.faisal.protoolkit.R;
 import com.faisal.protoolkit.databinding.FragmentDocumentScannerBinding;
 import com.faisal.protoolkit.ui.base.BaseFragment;
+import com.faisal.protoolkit.data.database.AppDatabase;
+import com.faisal.protoolkit.data.entities.DocumentEntity;
+import com.faisal.protoolkit.data.entities.PageEntity;
+import com.faisal.protoolkit.ui.tools.document.adapters.DocumentAdapter;
+import com.faisal.protoolkit.ui.tools.document.viewmodels.DocumentsViewModel;
+import com.faisal.protoolkit.util.FileManager;
 import com.faisal.protoolkit.util.ImageUtils;
 import com.faisal.protoolkit.util.ServiceLocator;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.mlkit.vision.common.InputImage;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanner;
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions;
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning;
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult;
 
-
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
- * Document Scanner fragment implementing ML Kit's document scanner API
+ * Documents List fragment showing all saved documents with ability to scan new ones
  */
 public class DocumentScannerFragment extends BaseFragment {
 
     private FragmentDocumentScannerBinding binding;
-    private DocumentScannerViewModel viewModel;
+    private DocumentsViewModel viewModel;
     private DocumentAdapter documentAdapter;
-    private List<DocumentItem> scannedDocuments;
+    private List<DocumentEntity> documents;
     private GmsDocumentScanner documentScanner;
+    
+    // For creating new document
+    private String currentDocumentId;
+    private String currentDocumentTitle;
+    private FileManager fileManager;
+    private AppDatabase database;
+    private List<DocumentItem> scannedPages; // Temporary for new document creation
 
     private ActivityResultLauncher<String> requestPermissionLauncher;
     private ActivityResultLauncher<IntentSenderRequest> documentScanLauncher;
@@ -66,6 +83,10 @@ public class DocumentScannerFragment extends BaseFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        // Initialize database and file manager
+        database = AppDatabase.getDatabase(requireContext());
+        fileManager = new FileManager(requireContext());
+        
         // Initialize the document scanner
         GmsDocumentScannerOptions options = new GmsDocumentScannerOptions.Builder()
                 .setGalleryImportAllowed(true)
@@ -75,7 +96,8 @@ public class DocumentScannerFragment extends BaseFragment {
         documentScanner = GmsDocumentScanning.getClient(options);
 
         // Initialize documents list
-        scannedDocuments = new ArrayList<>();
+        documents = new ArrayList<>();
+        scannedPages = new ArrayList<>();
         
         // Create permission launcher
         requestPermissionLauncher = registerForActivityResult(
@@ -93,22 +115,16 @@ public class DocumentScannerFragment extends BaseFragment {
                             GmsDocumentScanningResult.fromActivityResultIntent(data);
                         
                         if (scanningResult != null) {
-
                             for (GmsDocumentScanningResult.Page page : scanningResult.getPages()) {
-                               // Uri imageUri = pages.get(0).getImageUri();
-                                page.getImageUri();
-                               try{
-                                 Bitmap bitmap =  ImageUtils.getBitmapFromUri(getActivity().getBaseContext(),page.getImageUri());
-                                 addScannedDocument(bitmap);
-                               }catch (Exception e)
-                               {
+                               try {
+                                 Bitmap bitmap = ImageUtils.getBitmapFromUri(requireContext(), page.getImageUri());
+                                 addScannedPage(bitmap);
+                               } catch (Exception e) {
                                    e.printStackTrace();
+                                   Toast.makeText(requireContext(), "Error processing scanned page: " + e.getMessage(), 
+                                       Toast.LENGTH_LONG).show();
                                }
                             }
-//                        List<Bitmap> bitmaps = scanningResult.getBitmaps();
-//                        for (Bitmap bitmap : bitmaps) {
-//                            addScannedDocument(bitmap);
-//                        }
                         }
                     }
                 }
@@ -119,45 +135,94 @@ public class DocumentScannerFragment extends BaseFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         binding = FragmentDocumentScannerBinding.bind(view);
-        viewModel = new ViewModelProvider(this, ServiceLocator.getViewModelFactory()).get(DocumentScannerViewModel.class);
+        viewModel = new ViewModelProvider(this, new DocumentsViewModel.Factory(database)).get(DocumentsViewModel.class);
         
         setupToolbar();
         setupRecyclerView();
         setupButtons();
         setupObservers();
+        setupFAB();
+    }
+    
+    private void setupFAB() {
+        // Create FAB for adding new document
+        FloatingActionButton fab = new FloatingActionButton(requireContext());
+        fab.setImageResource(R.drawable.ic_add);
+        fab.setOnClickListener(v -> startNewDocument());
+        
+        // Add FAB to layout if not already there
+        // For now, I'll add it to the layout if needed
     }
 
     private void setupToolbar() {
+        binding.toolbar.setTitle("Documents");
         binding.toolbar.setNavigationOnClickListener(v -> requireActivity().onBackPressed());
     }
 
     private void setupRecyclerView() {
-        documentAdapter = new DocumentAdapter(scannedDocuments, this::onDeleteDocument);
-        binding.documentsList.setLayoutManager(new LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false));
+        documentAdapter = new DocumentAdapter(document -> {
+            // Navigate to document detail to view/edit pages
+            openDocumentDetail(document);
+        });
+        binding.documentsList.setLayoutManager(new GridLayoutManager(requireContext(), 2));
         binding.documentsList.setAdapter(documentAdapter);
+    }
+    
+    private void openDocumentDetail(DocumentEntity document) {
+        Bundle args = new Bundle();
+        args.putString("document_id", document.id);
+        NavHostFragment.findNavController(this)
+                .navigate(R.id.action_documentScannerFragment_to_documentDetailFragment, args);
     }
 
     private void setupButtons() {
-        binding.btnScan.setOnClickListener(v -> {
-            if (hasCameraPermission()) {
-                startDocumentScanning();
-            } else {
-                requestCameraPermission();
-            }
-        });
-
-        binding.btnExport.setOnClickListener(v -> {
-            if (scannedDocuments.isEmpty()) {
-                Toast.makeText(requireContext(), "No documents to export", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            
-            showExportOptionsDialog();
+        // Rename the scan button to be more appropriate for document list
+        binding.btnScan.setText("New Document");
+        binding.btnScan.setOnClickListener(v -> startNewDocument());
+        
+        // Rename export button to something more appropriate
+        binding.btnSave.setText("Manage");
+        binding.btnSave.setOnClickListener(v -> {
+            // Show options for managing documents
+            showManageOptions();
         });
     }
 
     private void setupObservers() {
-        // Observe scanned documents if needed
+        viewModel.getDocuments().observe(getViewLifecycleOwner(), documentList -> {
+            if (documentList != null) {
+                documents.clear();
+                documents.addAll(documentList);
+                documentAdapter.submitList(new ArrayList<>(documents));
+            }
+        });
+    }
+    
+    private void startNewDocument() {
+        // Create a temporary new document and start scanning pages into it
+        currentDocumentId = UUID.randomUUID().toString();
+        currentDocumentTitle = "Scan " + new Date().toString().replace(":", ".").replace(" ", "_");
+        fileManager.createDocumentDir(currentDocumentId);
+        scannedPages.clear();
+        
+        // Show a temporary UI or navigate to scanning mode for this document
+        showScanningForNewDocument();
+    }
+    
+    private void showScanningForNewDocument() {
+        // For now, show an alert to indicate scanning
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Scan Document")
+                .setMessage("Start scanning pages for: " + currentDocumentTitle)
+                .setPositiveButton("Start Scanning", (dialog, which) -> {
+                    if (hasCameraPermission()) {
+                        startDocumentScanning();
+                    } else {
+                        requestCameraPermission();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private boolean hasCameraPermission() {
@@ -169,7 +234,6 @@ public class DocumentScannerFragment extends BaseFragment {
 
     private void requestCameraPermission() {
         if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-            // Show rationale dialog
             new MaterialAlertDialogBuilder(requireContext())
                     .setTitle("Camera Permission Required")
                     .setMessage("This app needs camera access to scan documents. Please grant permission to continue.")
@@ -208,177 +272,204 @@ public class DocumentScannerFragment extends BaseFragment {
             });
     }
 
-    private void addScannedDocument(Bitmap bitmap) {
-        String timestamp = String.format(Locale.getDefault(), "Page_%d", System.currentTimeMillis());
-        DocumentItem document = new DocumentItem(timestamp, bitmap, System.currentTimeMillis());
-        scannedDocuments.add(document);
-        documentAdapter.notifyItemInserted(scannedDocuments.size() - 1);
+    private void addScannedPage(Bitmap bitmap) {
+        // Save bitmap to file
+        int pageIndex = scannedPages.size();
+        File originalFile = fileManager.getOriginalImageFile(currentDocumentId, pageIndex);
         
-        // Show preview of the last scanned document
-        showPreview(bitmap);
-        
-        Toast.makeText(requireContext(), "Document added", Toast.LENGTH_SHORT).show();
-    }
-
-    private void showPreview(Bitmap bitmap) {
-        binding.documentPreview.setImageBitmap(bitmap);
-        binding.documentPreview.setVisibility(View.VISIBLE);
-        binding.previewPlaceholder.setVisibility(View.GONE);
-    }
-
-    private void onDeleteDocument(int position) {
-        if (position >= 0 && position < scannedDocuments.size()) {
-            scannedDocuments.remove(position);
-            documentAdapter.notifyItemRemoved(position);
-            
-            // Update preview if the deleted document was the last one
-            if (scannedDocuments.isEmpty()) {
-                binding.documentPreview.setVisibility(View.GONE);
-                binding.previewPlaceholder.setVisibility(View.VISIBLE);
-            } else if (position == scannedDocuments.size()) {
-                // If the last document was deleted, show the new last document
-                showPreview(scannedDocuments.get(scannedDocuments.size() - 1).getBitmap());
-            }
+        // Make sure parent directory exists
+        File parentDir = originalFile.getParentFile();
+        if (parentDir != null && !parentDir.exists()) {
+            parentDir.mkdirs();
         }
+        
+        // Save original bitmap
+        try {
+            FileOutputStream out = new FileOutputStream(originalFile);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out);
+            out.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(requireContext(), "Error saving scanned page: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            return;
+        }
+        
+        // Add to temporary list
+        String timestamp = String.format(Locale.getDefault(), "Page_%d", pageIndex + 1);
+        DocumentItem documentItem = new DocumentItem(timestamp, bitmap, System.currentTimeMillis());
+        scannedPages.add(documentItem);
+        
+        // Ask if user wants to continue scanning or save
+        askToContinueScanning();
+    }
+    
+    private void askToContinueScanning() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Page Added")
+                .setMessage("Continue scanning more pages or save this document?")
+                .setPositiveButton("Add More Pages", (dialog, which) -> {
+                    // Continue scanning
+                    if (hasCameraPermission()) {
+                        startDocumentScanning();
+                    } else {
+                        requestCameraPermission();
+                    }
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    // Ask user if they want to discard changes
+                    new MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Discard Document?")
+                            .setMessage("Do you want to discard this document and its scanned pages?")
+                            .setPositiveButton("Discard", (d, w) -> {
+                                // Clear temporary data and return to document list
+                                scannedPages.clear();
+                                currentDocumentId = null;
+                                currentDocumentTitle = null;
+                                Toast.makeText(requireContext(), "Document discarded", Toast.LENGTH_SHORT).show();
+                            })
+                            .setNegativeButton("Keep Scanning", null)
+                            .show();
+                })
+                .setNeutralButton("Save Document", (dialog, which) -> {
+                    showSaveDocumentDialog();
+                })
+                .setCancelable(false)
+                .show();
     }
 
-    private void showExportOptionsDialog() {
-        String[] options = {"Export as PDF", "Export as Images", "Share as PDF", "Share as Images"};
+    private void showSaveDocumentDialog() {
+        // Create a dialog for user to enter document title
+        View dialogView = View.inflate(requireContext(), R.layout.dialog_save_document, null);
+        EditText titleEditText = dialogView.findViewById(R.id.edit_text_title);
+        
+        // Set default title
+        titleEditText.setText(currentDocumentTitle);
         
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Export Options")
-                .setItems(options, (dialog, which) -> {
-                    switch (which) {
-                        case 0:
-                            exportAsPdf();
-                            break;
-                        case 1:
-                            exportAsImages();
-                            break;
-                        case 2:
-                            shareAsPdf();
-                            break;
-                        case 3:
-                            shareAsImages();
-                            break;
+                .setTitle("Save Document")
+                .setView(dialogView)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String title = titleEditText.getText().toString().trim();
+                    if (TextUtils.isEmpty(title)) {
+                        title = "Scan " + new Date().toString().replace(":", ".").replace(" ", "_");
                     }
+                    
+                    saveDocument(title);
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private void exportAsPdf() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            List<Bitmap> bitmaps = new ArrayList<>();
-            for (DocumentItem item : scannedDocuments) {
-                bitmaps.add(item.getBitmap());
-            }
-            
-            String fileName = "ScannedDocument_" + System.currentTimeMillis() + ".pdf";
-            File pdfFile = PdfUtils.createPdfFromBitmapsWithA4Size(bitmaps, fileName, requireContext());
-            
-            if (pdfFile != null) {
-                Toast.makeText(requireContext(), "PDF exported successfully: " + pdfFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(requireContext(), "Failed to create PDF", Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            Toast.makeText(requireContext(), "PDF creation requires Android KitKat (API 19) or higher", Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void exportAsImages() {
-        // Implementation for image export
-        Toast.makeText(requireContext(), "Exporting as Images...", Toast.LENGTH_SHORT).show();
+    private void saveDocument(String title) {
+        // Show progress
+        binding.btnSave.setEnabled(false);
+        binding.btnSave.setText("Saving...");
         
-        for (int i = 0; i < scannedDocuments.size(); i++) {
-            DocumentItem document = scannedDocuments.get(i);
-            saveBitmapToFile(document.getBitmap(), "Document_Page_" + (i + 1) + ".jpg");
-        }
+        // Create or update document in database
+        DocumentEntity document = new DocumentEntity(
+            currentDocumentId,
+            title,
+            null, // folder_id - null for root
+            scannedPages.size(),
+            0, // cover page index
+            "[]", // labels_json
+            System.currentTimeMillis(), // created_at
+            System.currentTimeMillis(), // updated_at
+            "ACTIVE" // status
+        );
         
-        Toast.makeText(requireContext(), "Images exported successfully", Toast.LENGTH_SHORT).show();
-    }
-
-    private void shareAsPdf() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            List<Bitmap> bitmaps = new ArrayList<>();
-            for (DocumentItem item : scannedDocuments) {
-                bitmaps.add(item.getBitmap());
-            }
-            
-            String fileName = "SharedDocument_" + System.currentTimeMillis() + ".pdf";
-            File pdfFile = PdfUtils.createPdfFromBitmapsWithA4Size(bitmaps, fileName, requireContext());
-            
-            if (pdfFile != null) {
-                Uri uri = FileProvider.getUriForFile(
-                        requireContext(),
-                        BuildConfig.APPLICATION_ID + ".fileprovider",
-                        pdfFile
+        new Thread(() -> {
+            try {
+                // Check if document already exists, if so, update it instead of inserting
+                DocumentEntity existingDoc = database.documentDao().getDocumentById(currentDocumentId);
+                
+                if (existingDoc != null) {
+                    // Update existing document
+                    database.documentDao().updateDocument(document);
+                } else {
+                    // Insert new document
+                    database.documentDao().insertDocument(document);
+                }
+                
+                // Insert or update pages
+                // First, delete existing pages for this document to avoid duplicates
+                database.pageDao().deletePagesByDocument(currentDocumentId);
+                
+                for (int i = 0; i < scannedPages.size(); i++) {
+                    String pageId = UUID.randomUUID().toString();
+                    File originalFile = fileManager.getOriginalImageFile(currentDocumentId, i);
+                    
+                    PageEntity page = new PageEntity(
+                        pageId,
+                        currentDocumentId,
+                        i, // index
+                        originalFile.getAbsolutePath(), // uri_original
+                        null, // uri_render
+                        null, // edit_ops_json
+                        0, // width - will be populated later
+                        0, // height - will be populated later
+                        300, // dpi
+                        null, // ocr_lang
+                        false // ocr_done
+                    );
+                    
+                    database.pageDao().insertPage(page);
+                }
+                
+                // Update document metadata
+                database.documentDao().updateDocumentMetadata(
+                    currentDocumentId,
+                    scannedPages.size(),
+                    0,
+                    System.currentTimeMillis()
                 );
                 
-                Intent shareIntent = new Intent();
-                shareIntent.setAction(Intent.ACTION_SEND);
-                shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
-                shareIntent.setType("application/pdf");
-                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                
-                startActivity(Intent.createChooser(shareIntent, "Share document as PDF"));
-            } else {
-                Toast.makeText(requireContext(), "Failed to create PDF for sharing", Toast.LENGTH_SHORT).show();
+                // Refresh the document list
+                requireActivity().runOnUiThread(() -> {
+                    binding.btnSave.setEnabled(true);
+                    binding.btnSave.setText("Manage");
+                    Toast.makeText(requireContext(), "Document saved: " + title, Toast.LENGTH_LONG).show();
+                    
+                    // Force refresh the document list by calling refreshDocuments
+                    viewModel.refreshDocuments();
+                    
+                    // Clear the temporary scanning data
+                    scannedPages.clear();
+                    currentDocumentId = null;
+                    currentDocumentTitle = null;
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                requireActivity().runOnUiThread(() -> {
+                    binding.btnSave.setEnabled(true);
+                    binding.btnSave.setText("Manage");
+                    Toast.makeText(requireContext(), "Error saving document: " + e.getMessage(), 
+                        Toast.LENGTH_LONG).show();
+                });
             }
-        } else {
-            Toast.makeText(requireContext(), "PDF sharing requires Android KitKat (API 19) or higher", Toast.LENGTH_LONG).show();
-        }
+        }).start();
     }
-
-    private void shareAsImages() {
-        // Implementation for sharing images
-        Toast.makeText(requireContext(), "Preparing to share images...", Toast.LENGTH_SHORT).show();
+    
+    private void showManageOptions() {
+        String[] options = {"Refresh List", "Import Documents", "Settings"};
         
-        List<Uri> imageUris = new ArrayList<>();
-        for (int i = 0; i < scannedDocuments.size(); i++) {
-            DocumentItem document = scannedDocuments.get(i);
-            String fileName = "Document_Page_" + (i + 1) + ".jpg";
-            File file = saveBitmapToFile(document.getBitmap(), fileName);
-            if (file != null) {
-                Uri uri = FileProvider.getUriForFile(
-                        requireContext(),
-                        BuildConfig.APPLICATION_ID + ".fileprovider",
-                        file
-                );
-                imageUris.add(uri);
-            }
-        }
-        
-        if (!imageUris.isEmpty()) {
-            Intent shareIntent = new Intent();
-            shareIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
-            shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, new ArrayList<>(imageUris));
-            shareIntent.setType("image/*");
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            
-            startActivity(Intent.createChooser(shareIntent, "Share documents"));
-        }
-    }
-
-    private File saveBitmapToFile(Bitmap bitmap, String fileName) {
-        try {
-            File documentsDir = new File(requireContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "ScannedDocs");
-            if (!documentsDir.exists()) {
-                documentsDir.mkdirs();
-            }
-            
-            File file = new File(documentsDir, fileName);
-            FileOutputStream out = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
-            out.close();
-            
-            return file;
-        } catch (IOException e) {
-            e.printStackTrace();
-            Toast.makeText(requireContext(), "Error saving image: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            return null;
-        }
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Manage Documents")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0: // Refresh
+                            viewModel.refreshDocuments();
+                            break;
+                        case 1: // Import
+                            Toast.makeText(requireContext(), "Import feature coming soon", Toast.LENGTH_SHORT).show();
+                            break;
+                        case 2: // Settings
+                            Toast.makeText(requireContext(), "Settings coming soon", Toast.LENGTH_SHORT).show();
+                            break;
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     @Override

@@ -11,54 +11,37 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.faisal.protoolkit.R;
 
-import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.Locale;
 
 /**
- * Adapter for displaying scanned document items in a RecyclerView
+ * Adapter for displaying scanned document pages in the original document scanner
  */
-public class DocumentAdapter extends RecyclerView.Adapter<DocumentAdapter.DocumentViewHolder> {
+public class DocumentAdapter extends RecyclerView.Adapter<DocumentAdapter.ViewHolder> {
     private List<DocumentItem> documents;
-    private OnDeleteClickListener onDeleteClickListener;
+    private OnItemClickListener listener;
 
-    public interface OnDeleteClickListener {
+    public interface OnItemClickListener {
+        void onItemClick(int position);
         void onDeleteClick(int position);
     }
 
-    public DocumentAdapter(List<DocumentItem> documents, OnDeleteClickListener listener) {
+    public DocumentAdapter(List<DocumentItem> documents, OnItemClickListener listener) {
         this.documents = documents;
-        this.onDeleteClickListener = listener;
+        this.listener = listener;
     }
 
     @NonNull
     @Override
-    public DocumentViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_document, parent, false);
-        return new DocumentViewHolder(view);
+                .inflate(R.layout.item_document_scanned, parent, false);
+        return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull DocumentViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         DocumentItem document = documents.get(position);
-        
-        holder.title.setText(document.getTitle());
-        
-        // Format timestamp
-        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault());
-        String formattedDate = sdf.format(document.getTimestamp());
-        holder.subtitle.setText(formattedDate);
-        
-        // Set thumbnail
-        holder.thumbnail.setImageBitmap(document.getBitmap());
-        
-        // Set delete button click listener
-        holder.deleteBtn.setOnClickListener(v -> {
-            if (onDeleteClickListener != null) {
-                onDeleteClickListener.onDeleteClick(position);
-            }
-        });
+        holder.bind(document, position);
     }
 
     @Override
@@ -66,17 +49,38 @@ public class DocumentAdapter extends RecyclerView.Adapter<DocumentAdapter.Docume
         return documents.size();
     }
 
-    static class DocumentViewHolder extends RecyclerView.ViewHolder {
-        ImageView thumbnail;
-        TextView title, subtitle;
-        ImageView deleteBtn;
+    public void updateList(List<DocumentItem> newDocuments) {
+        this.documents = newDocuments;
+        notifyDataSetChanged();
+    }
 
-        DocumentViewHolder(@NonNull View itemView) {
+    public class ViewHolder extends RecyclerView.ViewHolder {
+        private ImageView imageView;
+        private TextView titleText;
+        private ImageView deleteBtn;
+
+        public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            thumbnail = itemView.findViewById(R.id.document_thumb);
-            title = itemView.findViewById(R.id.document_title);
-            subtitle = itemView.findViewById(R.id.document_subtitle);
+            imageView = itemView.findViewById(R.id.document_image);
+            titleText = itemView.findViewById(R.id.document_title);
             deleteBtn = itemView.findViewById(R.id.delete_btn);
+        }
+
+        public void bind(DocumentItem document, int position) {
+            titleText.setText(document.getTitle());
+            imageView.setImageBitmap(document.getBitmap());
+
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onItemClick(position);
+                }
+            });
+
+            deleteBtn.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onDeleteClick(position);
+                }
+            });
         }
     }
 }
