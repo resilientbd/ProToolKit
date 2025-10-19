@@ -20,6 +20,7 @@
     <string name="label_text_tools">Text Tools</string>
     <string name="label_device_info">Device Info</string>
     <string name="label_qr_scanner">QR &amp; Barcode</string>
+    <string name="label_doc_scanner">Document Scanner</string>
     <string name="label_file_tools">File Tools</string>
     <string name="label_network_tools">Network Tools</string>
 

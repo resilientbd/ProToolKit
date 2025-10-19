@@ -58,4 +58,10 @@
         android:label="@string/label_qr_scanner"
         tools:layout="@layout/fragment_qr_scanner" />
 
+    <fragment
+        android:id="@+id/documentScannerFragment"
+        android:name="com.faisal.protoolkit.ui.tools.document.DocumentScannerFragment"
+        android:label="@string/label_doc_scanner"
+        tools:layout="@layout/fragment_document_scanner" />
+
 </navigation>

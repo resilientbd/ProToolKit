@@ -31,6 +31,7 @@ public class AppConstants {
     public static final String TOOL_ID_FILE_TOOLS = "tool_file_tools";
     public static final String TOOL_ID_NETWORK_TOOLS = "tool_network_tools";
     public static final String TOOL_ID_TEXT_TOOLS = "tool_text_tools";
+    public static final String TOOL_ID_DOC_SCANNER = "tool_doc_scanner";
     
     // Permission constants
     public static final String PERMISSION_CAMERA = "android.permission.CAMERA";

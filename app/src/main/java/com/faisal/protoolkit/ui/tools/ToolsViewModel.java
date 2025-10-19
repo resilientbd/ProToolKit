@@ -32,6 +32,8 @@ public class ToolsViewModel extends BaseViewModel {
                 R.drawable.ic_tool_device, R.id.deviceInfoFragment, false));
         items.add(new ToolItem(AppConstants.TOOL_ID_QR_SCANNER, R.string.label_qr_scanner,
                 R.drawable.ic_tool_qr, R.id.qrScannerFragment, true));
+        items.add(new ToolItem(AppConstants.TOOL_ID_DOC_SCANNER, R.string.label_doc_scanner,
+                R.drawable.ic_tool_file, R.id.documentScannerFragment, true));
         items.add(new ToolItem(AppConstants.TOOL_ID_FILE_TOOLS, R.string.label_file_tools,
                 R.drawable.ic_tool_file, R.id.fileToolsFragment, false));
         items.add(new ToolItem(AppConstants.TOOL_ID_NETWORK_TOOLS, R.string.label_network_tools,
