@@ -1,15 +1,24 @@
 package com.faisal.protoolkit.ui.tools.document;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.SeekBar;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
+import com.google.android.material.slider.Slider;
+
+import android.graphics.PointF;
+import android.widget.ImageView;
 import com.faisal.protoolkit.R;
 import com.faisal.protoolkit.databinding.ActivityDocumentPageEditBinding;
 import com.faisal.protoolkit.model.EditOps;
@@ -26,6 +35,16 @@ public class DocumentPageEditActivity extends AppCompatActivity {
     private AppDatabase database;
     private RenderEngine renderEngine;
     private EditOps currentEditOps;
+    
+    // Store the current scale and center to maintain zoom state
+    private float currentScale = 0f;
+    private PointF currentCenter = null;
+    private boolean isTopActionBarVisible = false;
+    private boolean isFilterOptionsVisible = false;
+    private boolean isAdjustmentsVisible = false;
+    
+    // Animation duration in milliseconds
+    private static final int ANIMATION_DURATION = 300;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,115 +119,139 @@ public class DocumentPageEditActivity extends AppCompatActivity {
             getSupportActionBar().setTitle("Edit Page");
         }
 
-        // Setup quick filter buttons (icon only) - initially disabled until image is loaded
+        // Setup filter buttons - initially disabled until image is loaded
         binding.btnFilterOriginal.setEnabled(false);
         binding.btnFilterGray.setEnabled(false);
         binding.btnFilterBw.setEnabled(false);
         binding.btnFilterBoost.setEnabled(false);
 
-        // Set up click listeners
-        binding.btnFilterOriginal.setOnClickListener(v -> setFilterMode("ORIGINAL"));
-        binding.btnFilterGray.setOnClickListener(v -> setFilterMode("GRAY"));
-        binding.btnFilterBw.setOnClickListener(v -> setFilterMode("BW"));
-        binding.btnFilterBoost.setOnClickListener(v -> setFilterMode("COLOR_BOOST"));
+        // Set up click listeners for filter image buttons
+        binding.btnFilterOriginal.setOnClickListener(v -> {
+            setFilterMode("ORIGINAL");
+            updateFilterSelection("ORIGINAL");
+            // Keep filter options visible after selection
+        });
+        binding.btnFilterGray.setOnClickListener(v -> {
+            setFilterMode("GRAY");
+            updateFilterSelection("GRAY");
+            // Keep filter options visible after selection
+        });
+        binding.btnFilterBw.setOnClickListener(v -> {
+            setFilterMode("BW");
+            updateFilterSelection("BW");
+            // Keep filter options visible after selection
+        });
+        binding.btnFilterBoost.setOnClickListener(v -> {
+            setFilterMode("COLOR_BOOST");
+            updateFilterSelection("COLOR_BOOST");
+            // Keep filter options visible after selection
+        });
 
         // Initially disable other controls too until image is loaded
         binding.seekbarContrast.setEnabled(false);
         binding.seekbarBrightness.setEnabled(false);
         binding.seekbarSharpen.setEnabled(false);
-        binding.btnRotateRight.setEnabled(false);
-        binding.btnCrop.setEnabled(false);
-
-        // Setup contrast control
-        binding.seekbarContrast.setProgress(100); // Default value for contrast (1.0)
-        // Initialize with default value
-        if (currentEditOps != null) {
-            if (currentEditOps.filter == null) currentEditOps.filter = new EditOps.Filter();
-            currentEditOps.filter.contrast = 1.0f;
-        }
-        binding.seekbarContrast.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser) {
-                    float contrast = progress / 100.0f; // Convert 0-200 to 0.0-2.0
-                    Log.d("DocumentPageEdit", "Contrast changed to: " + contrast);
-                    updateContrast(contrast);
-                    binding.contrastValue.setText(String.format("%.1f", contrast));
-                }
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-            }
-        });
-
-        // Setup brightness control
-        binding.seekbarBrightness.setProgress(100); // Default value for brightness (0.0)
-        // Initialize with default value
-        if (currentEditOps != null) {
-            if (currentEditOps.filter == null) currentEditOps.filter = new EditOps.Filter();
-            currentEditOps.filter.brightness = 0.0f;
-        }
-        binding.seekbarBrightness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser) {
-                    float brightness = (progress - 100) / 100.0f; // Convert 0-200 to -1.0 to 1.0
-                    Log.d("DocumentPageEdit", "Brightness changed to: " + brightness);
-                    updateBrightness(brightness);
-                    binding.brightnessValue.setText(String.format("%.1f", brightness));
-                }
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-            }
-        });
-
-        // Setup sharpen control
-        binding.seekbarSharpen.setProgress(0); // Default value for sharpen (0.0)
-        // Initialize with default value
-        if (currentEditOps != null) {
-            if (currentEditOps.filter == null) currentEditOps.filter = new EditOps.Filter();
-            currentEditOps.filter.sharpen = 0.0f;
-        }
-        binding.seekbarSharpen.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser) {
-                    float sharpen = progress / 100.0f; // Convert 0-100 to 0.0-1.0
-                    Log.d("DocumentPageEdit", "Sharpen changed to: " + sharpen);
-                    updateSharpen(sharpen);
-                    binding.sharpenValue.setText(String.format("%.1f", sharpen));
-                }
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-            }
-        });
-
+        
         // Setup rotation button (icon only)
         binding.btnRotateRight.setOnClickListener(v -> rotateRight());
 
         // Setup crop button (icon only)
         binding.btnCrop.setOnClickListener(v -> showCropOptions());
 
-        // Setup save and cancel buttons (icon only)
+        // Setup "Action" button to show/hide adjustments sheet
+        binding.btnAction.setOnClickListener(v -> {
+            Log.d("DocumentPageEdit", "Action button clicked - starting action");
+            Log.d("DocumentPageEdit", "isAdjustmentsVisible before: " + isAdjustmentsVisible);
+            Log.d("DocumentPageEdit", "adjustmentsSheet visibility before: " + binding.adjustmentsSheet.getVisibility());
+            
+            showAdjustmentsSheet();
+            hideTopActionBar(); // Hide the top bar when showing adjustments
+            hideFilterOptions(); // Also hide filter options when showing adjustments
+            
+            Log.d("DocumentPageEdit", "Called showAdjustmentsSheet and hide methods");
+            Log.d("DocumentPageEdit", "isAdjustmentsVisible after: " + isAdjustmentsVisible);
+        });
+
+        // Setup "Filter" button to show/hide filter options
+        binding.btnFilter.setOnClickListener(v -> {
+            showFilterOptions();
+            hideTopActionBar(); // Hide the top bar when showing filters
+        });
+
+        // Setup save button
         binding.btnSave.setOnClickListener(v -> saveEdits());
-        binding.btnCancel.setOnClickListener(v -> finish());
+
+        // Setup reset button
+        binding.btnReset.setOnClickListener(v -> {
+            resetAdjustments();
+            hideAdjustmentsSheet();
+        });
+
+        // Setup contrast control
+        if (currentEditOps != null) {
+            if (currentEditOps.filter == null) currentEditOps.filter = new EditOps.Filter();
+            currentEditOps.filter.contrast = 1.0f;
+        }
+        
+        binding.seekbarContrast.addOnChangeListener((slider, value, fromUser) -> {
+            if (fromUser) {
+                float contrast = value;
+                Log.d("DocumentPageEdit", "Contrast changed to: " + contrast);
+                updateContrast(contrast);
+                binding.contrastValue.setText(String.format("%.1f", contrast));
+            }
+        });
+
+        // Setup brightness control
+        if (currentEditOps != null) {
+            if (currentEditOps.filter == null) currentEditOps.filter = new EditOps.Filter();
+            currentEditOps.filter.brightness = 0.0f;
+        }
+        
+        binding.seekbarBrightness.addOnChangeListener((slider, value, fromUser) -> {
+            if (fromUser) {
+                float brightness = value;
+                Log.d("DocumentPageEdit", "Brightness changed to: " + brightness);
+                updateBrightness(brightness);
+                binding.brightnessValue.setText(String.format("%.1f", brightness));
+            }
+        });
+
+        // Setup sharpen control
+        if (currentEditOps != null) {
+            if (currentEditOps.filter == null) currentEditOps.filter = new EditOps.Filter();
+            currentEditOps.filter.sharpen = 0.0f;
+        }
+        
+        binding.seekbarSharpen.addOnChangeListener((slider, value, fromUser) -> {
+            if (fromUser) {
+                float sharpen = value;
+                Log.d("DocumentPageEdit", "Sharpen changed to: " + sharpen);
+                updateSharpen(sharpen);
+                binding.sharpenValue.setText(String.format("%.1f", sharpen));
+            }
+        });
+
+        // Setup tap listener for the image view to toggle top action bar
+        binding.imageViewPreview.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                toggleTopActionBar();
+            }
+            return false; // Return false to allow the SubsamplingScaleImageView to handle touch events
+        });
+        
+        // Add click listener to image to hide all panels when clicked outside
+        binding.imageViewPreview.setOnClickListener(v -> {
+            if (isTopActionBarVisible) {
+                hideTopActionBar();
+            }
+            if (isFilterOptionsVisible) {
+                hideFilterOptions();
+            }
+            if (isAdjustmentsVisible) {
+                hideAdjustmentsSheet();
+            }
+        });
     }
 
     private void enableUIControls() {
@@ -223,11 +266,26 @@ public class DocumentPageEditActivity extends AppCompatActivity {
             binding.seekbarSharpen.setEnabled(true);
             binding.btnRotateRight.setEnabled(true);
             binding.btnCrop.setEnabled(true);
+            binding.btnAction.setEnabled(true);
+
+            Log.d("DocumentPageEdit", "enableUIControls: Setting up initial slider values");
+            Log.d("DocumentPageEdit", "adjustmentsSheet visibility: " + binding.adjustmentsSheet.getVisibility());
+            Log.d("DocumentPageEdit", "adjustmentsSheet view is null: " + (binding.adjustmentsSheet == null));
 
             // Set the current filter mode on the UI if it exists
             if (currentEditOps != null && currentEditOps.filter != null) {
                 String mode = currentEditOps.filter.mode;
                 updateFilterButtonSelection(mode);
+                
+                // Initialize slider values from the current edit ops
+                binding.seekbarContrast.setValue(currentEditOps.filter.contrast);
+                binding.contrastValue.setText(String.format("%.1f", currentEditOps.filter.contrast));
+                
+                binding.seekbarBrightness.setValue(currentEditOps.filter.brightness);
+                binding.brightnessValue.setText(String.format("%.1f", currentEditOps.filter.brightness));
+                
+                binding.seekbarSharpen.setValue(currentEditOps.filter.sharpen);
+                binding.sharpenValue.setText(String.format("%.1f", currentEditOps.filter.sharpen));
             }
         });
     }
@@ -240,6 +298,231 @@ public class DocumentPageEditActivity extends AppCompatActivity {
         binding.btnFilterBw.setAlpha(mode != null && mode.equals("BW") ? 1.0f : 0.5f);
         binding.btnFilterBoost.setAlpha(mode != null && mode.equals("COLOR_BOOST") ? 1.0f : 0.5f);
     }
+    
+    private void toggleTopActionBar() {
+        if (isTopActionBarVisible) {
+            hideTopActionBar();
+        } else {
+            showTopActionBar();
+        }
+    }
+    
+    private void showTopActionBar() {
+        if (binding.topActionBar.getVisibility() == View.GONE) {
+            binding.topActionBar.setVisibility(View.VISIBLE);
+            binding.topActionBar.setTranslationY(-binding.topActionBar.getHeight());
+            
+            ObjectAnimator animator = ObjectAnimator.ofFloat(binding.topActionBar, "translationY", 0);
+            animator.setDuration(ANIMATION_DURATION);
+            animator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    binding.topActionBar.setVisibility(View.VISIBLE);
+                }
+            });
+            animator.start();
+        }
+        isTopActionBarVisible = true;
+
+        // Hide other panels when showing top bar
+        if (isFilterOptionsVisible) {
+            hideFilterOptions();
+        }
+        if (isAdjustmentsVisible) {
+            hideAdjustmentsSheet();
+        }
+    }
+    
+    private void hideTopActionBar() {
+        if (binding.topActionBar.getVisibility() == View.VISIBLE) {
+            ObjectAnimator animator = ObjectAnimator.ofFloat(binding.topActionBar, "translationY", 
+                    -binding.topActionBar.getHeight());
+            animator.setDuration(ANIMATION_DURATION);
+            animator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    binding.topActionBar.setVisibility(View.GONE);
+                }
+            });
+            animator.start();
+        }
+        isTopActionBarVisible = false;
+    }
+    
+    private void showFilterOptions() {
+        if (binding.filterScrollView.getVisibility() == View.GONE) {
+            binding.filterScrollView.setVisibility(View.VISIBLE);
+            binding.filterScrollView.setTranslationY(-binding.filterScrollView.getHeight());
+            
+            ObjectAnimator animator = ObjectAnimator.ofFloat(binding.filterScrollView, "translationY", 0f);
+            animator.setDuration(ANIMATION_DURATION);
+            animator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    binding.filterScrollView.setVisibility(View.VISIBLE);
+                }
+            });
+            animator.start();
+        }
+        isFilterOptionsVisible = true;
+    }
+    
+    private void hideFilterOptions() {
+        if (binding.filterScrollView.getVisibility() == View.VISIBLE) {
+            ObjectAnimator animator = ObjectAnimator.ofFloat(binding.filterScrollView, "translationY", 
+                    -binding.filterScrollView.getHeight());
+            animator.setDuration(ANIMATION_DURATION);
+            animator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    binding.filterScrollView.setVisibility(View.GONE);
+                }
+            });
+            animator.start();
+        }
+        isFilterOptionsVisible = false;
+    }
+    
+    private void showAdjustmentsSheet() {
+        Log.d("DocumentPageEdit", "showAdjustmentsSheet called");
+        Log.d("DocumentPageEdit", "adjustmentsSheet visibility: " + binding.adjustmentsSheet.getVisibility());
+        
+        if (binding.adjustmentsSheet.getVisibility() == View.GONE) {
+            Log.d("DocumentPageEdit", "Showing adjustments sheet - initial state is GONE");
+            
+            // Set the state immediately
+            isAdjustmentsVisible = true;
+            
+            // Make sure it's visible first
+            binding.adjustmentsSheet.setVisibility(View.VISIBLE);
+            binding.adjustmentsSheet.setAlpha(0f); // Start transparent
+            
+            // Use a simple fade-in animation instead of translation
+            ObjectAnimator fadeIn = ObjectAnimator.ofFloat(binding.adjustmentsSheet, "alpha", 0f, 1f);
+            fadeIn.setDuration(ANIMATION_DURATION);
+            fadeIn.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    Log.d("DocumentPageEdit", "Adjustments sheet fade-in started");
+                    binding.adjustmentsSheet.setVisibility(View.VISIBLE);
+                }
+                
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    Log.d("DocumentPageEdit", "Adjustments sheet fade-in ended");
+                    // State is already set above
+                }
+            });
+            
+            fadeIn.start();
+            Log.d("DocumentPageEdit", "Started fade-in animation to show adjustments sheet");
+        } else {
+            Log.d("DocumentPageEdit", "Adjustments sheet already visible");
+            isAdjustmentsVisible = true;
+        }
+    }
+    
+    private void hideAdjustmentsSheet() {
+        if (binding.adjustmentsSheet.getVisibility() == View.VISIBLE) {
+            ObjectAnimator fadeOut = ObjectAnimator.ofFloat(binding.adjustmentsSheet, "alpha", 1f, 0f);
+            fadeOut.setDuration(ANIMATION_DURATION);
+            fadeOut.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    binding.adjustmentsSheet.setVisibility(View.GONE);
+                    isAdjustmentsVisible = false;
+                }
+            });
+            fadeOut.start();
+        }
+    }
+    
+    private void updateFilterSelection(String selectedMode) {
+        // Update the visual state of filter buttons to show which one is selected
+        updateFilterButtonSelection(selectedMode);
+    }
+    
+    private void setupFilterThumbnails() {
+        if (originalBitmap != null && !originalBitmap.isRecycled()) {
+            // Create thumbnails for each filter mode
+            createFilterThumbnail("ORIGINAL", binding.btnFilterOriginal);
+            createFilterThumbnail("GRAY", binding.btnFilterGray);
+            createFilterThumbnail("BW", binding.btnFilterBw);
+            createFilterThumbnail("COLOR_BOOST", binding.btnFilterBoost);
+        }
+    }
+    
+    private void createFilterThumbnail(String filterMode, ImageView imageView) {
+        if (originalBitmap == null || originalBitmap.isRecycled()) return;
+        
+        // Create a copy of edit operations to apply the specific filter
+        EditOps tempEditOps = new EditOps();
+        if (currentEditOps != null) {
+            // Copy the rotation and other operations
+            tempEditOps.rotate = currentEditOps.rotate;
+            
+            // Ensure filter exists
+            if (tempEditOps.filter == null) {
+                tempEditOps.filter = new EditOps.Filter();
+            }
+            
+            // Copy existing adjustments and apply the specific filter
+            if (currentEditOps.filter != null) {
+                tempEditOps.filter.contrast = currentEditOps.filter.contrast;
+                tempEditOps.filter.brightness = currentEditOps.filter.brightness;
+                tempEditOps.filter.sharpen = currentEditOps.filter.sharpen;
+            } else {
+                tempEditOps.filter.contrast = 1.0f;
+                tempEditOps.filter.brightness = 0.0f;
+                tempEditOps.filter.sharpen = 0.0f;
+            }
+        }
+        
+        // Set the specific filter mode for this thumbnail
+        if (tempEditOps.filter == null) {
+            tempEditOps.filter = new EditOps.Filter();
+        }
+        tempEditOps.filter.mode = filterMode;
+        
+        // Create a small version of the bitmap for the thumbnail
+        Bitmap smallBitmap = Bitmap.createScaledBitmap(originalBitmap, 100, 100, true);
+        
+        // Apply the filter to the small bitmap
+        new Thread(() -> {
+            try {
+                Bitmap filteredBitmap = renderEngine.applyFilters(smallBitmap, tempEditOps);
+                if (filteredBitmap != null) {
+                    runOnUiThread(() -> {
+                        imageView.setImageBitmap(filteredBitmap);
+                    });
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                runOnUiThread(() -> {
+                    imageView.setImageBitmap(smallBitmap);
+                });
+            }
+        }).start();
+    }
+    
+    private void resetAdjustments() {
+        if (currentEditOps != null && currentEditOps.filter != null) {
+            currentEditOps.filter.contrast = 1.0f;
+            currentEditOps.filter.brightness = 0.0f;
+            currentEditOps.filter.sharpen = 0.0f;
+            
+            // Update UI
+            binding.seekbarContrast.setValue(1.0f);
+            binding.contrastValue.setText("1.0");
+            binding.seekbarBrightness.setValue(0.0f);
+            binding.brightnessValue.setText("0.0");
+            binding.seekbarSharpen.setValue(0.0f);
+            binding.sharpenValue.setText("0.0");
+            
+            // Apply the reset filters
+            applyFilters();
+        }
+    }
 
     private void loadInitialImage() {
         if (originalBitmap != null && !originalBitmap.isRecycled()) {
@@ -247,9 +530,18 @@ public class DocumentPageEditActivity extends AppCompatActivity {
             Bitmap previewBitmap = originalBitmap.copy(originalBitmap.getConfig(), true);
             if (previewBitmap != null) {
                 binding.imageViewPreview.setImage(ImageSource.bitmap(previewBitmap));
+                
+                // Restore zoom state if previously saved
+                if (currentScale > 0 && currentCenter != null) {
+                    binding.imageViewPreview.setScaleAndCenter(currentScale, currentCenter);
+                }
+                
                 Log.d("DocumentPageEdit", "Loaded initial image, applying filters");
                 // Apply initial filters to show the current state
                 applyFilters();
+                
+                // Generate filter thumbnails
+                setupFilterThumbnails();
             } else {
                 Log.e("DocumentPageEdit", "Failed to copy bitmap for initial image preview");
             }
@@ -317,6 +609,11 @@ public class DocumentPageEditActivity extends AppCompatActivity {
             Log.d("DocumentPageEdit", "Original bitmap: " + originalBitmap.getWidth() + "x" + originalBitmap.getHeight());
             Log.d("DocumentPageEdit", "Filter mode: " + (currentEditOps.filter != null ? currentEditOps.filter.mode : "null"));
             
+            // Save current scale and center before applying filters
+            SubsamplingScaleImageView imageView = binding.imageViewPreview;
+            currentScale = imageView.getScale();
+            currentCenter = imageView.getCenter();
+            
             // Make a copy of the original bitmap to prevent it from being affected by recycling
             // This prevents the bitmap from being recycled during processing if activity is destroyed
             Bitmap originalBitmapCopy = originalBitmap.copy(originalBitmap.getConfig(), true);
@@ -334,7 +631,11 @@ public class DocumentPageEditActivity extends AppCompatActivity {
                     if (processedBitmap != null) {
                         Log.d("DocumentPageEdit","Bitmap processed successfully: " + processedBitmap.getWidth() + "x" + processedBitmap.getHeight());
                         runOnUiThread(() -> {
+                            // Set the new image while preserving the zoom state
                             binding.imageViewPreview.setImage(ImageSource.bitmap(processedBitmap));
+                            if (currentScale > 0 && currentCenter != null) {
+                                binding.imageViewPreview.setScaleAndCenter(currentScale, currentCenter);
+                            }
                             Log.d("DocumentPageEdit", "Updated preview with processed bitmap");
                             // The SubsamplingScaleImageView handles bitmap lifecycle internally
                         });

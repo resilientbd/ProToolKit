@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Night theme overrides for Edit Page components -->
     <style name="Theme.ProToolkit" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/brand_primary</item>
@@ -16,6 +17,9 @@
         <item name="android:statusBarColor">?attr/colorPrimary</item>
         <!-- Customize your theme here. -->
         <item name="android:windowBackground">@color/background_default</item>
+        
+        <!-- Material 3 color roles that might be referenced in the layout -->
+        <item name="colorOutlineVariant">@color/md_theme_outline_dark</item>
     </style>
 
 </resources>
