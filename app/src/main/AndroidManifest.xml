@@ -62,6 +62,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <activity
+            android:name=".ui.tools.document.DocumentPageEditActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ProToolkit" />
     </application>
 
 </manifest>

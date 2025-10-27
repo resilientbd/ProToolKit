@@ -1,13 +1,13 @@
 package com.faisal.protoolkit.ui.tools.document.adapters;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
@@ -15,31 +15,29 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.faisal.protoolkit.R;
 import com.faisal.protoolkit.data.entities.PageEntity;
+import com.faisal.protoolkit.ui.tools.document.DocumentPageEditActivity;
 import com.faisal.protoolkit.ui.tools.document.viewmodels.DocumentDetailViewModel;
 import java.io.File;
 
 public class PageAdapter extends ListAdapter<PageEntity, PageAdapter.PageViewHolder> {
     private final DocumentDetailViewModel viewModel;
     private final OnPageClickListener listener;
+    private final OnPageDeleteListener deleteListener;
 
     public interface OnPageClickListener {
         void onPageClick(PageEntity page);
     }
 
-    public interface OnPageLongClickListener {
-        void onPageLongClick(PageEntity page, int position);
+    public interface OnPageDeleteListener {
+        void onPageDelete(PageEntity page);
     }
 
-    private OnPageLongClickListener longClickListener;
-
-    public PageAdapter(DocumentDetailViewModel viewModel, OnPageClickListener listener) {
+    public PageAdapter(DocumentDetailViewModel viewModel, OnPageClickListener listener, 
+                      OnPageDeleteListener deleteListener) {
         super(DIFF_CALLBACK);
         this.viewModel = viewModel;
         this.listener = listener;
-    }
-
-    public void setOnPageLongClickListener(OnPageLongClickListener longClickListener) {
-        this.longClickListener = longClickListener;
+        this.deleteListener = deleteListener;
     }
 
     private static final DiffUtil.ItemCallback<PageEntity> DIFF_CALLBACK = 
@@ -74,11 +72,15 @@ public class PageAdapter extends ListAdapter<PageEntity, PageAdapter.PageViewHol
     class PageViewHolder extends RecyclerView.ViewHolder {
         private final ImageView thumbnailImageView;
         private final TextView indexTextView;
+        private final ImageButton editButton;
+        private final ImageButton deleteButton;
 
         PageViewHolder(@NonNull View itemView) {
             super(itemView);
             thumbnailImageView = itemView.findViewById(R.id.thumbnail_image_view);
             indexTextView = itemView.findViewById(R.id.index_text_view);
+            editButton = itemView.findViewById(R.id.btn_edit_page);
+            deleteButton = itemView.findViewById(R.id.btn_delete_page);
 
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
@@ -87,18 +89,28 @@ public class PageAdapter extends ListAdapter<PageEntity, PageAdapter.PageViewHol
                 }
             });
 
-            itemView.setOnLongClickListener(v -> {
+            editButton.setOnClickListener(v -> {
                 int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && longClickListener != null) {
-                    longClickListener.onPageLongClick(getItem(position), position);
-                    return true;
+                if (position != RecyclerView.NO_POSITION) {
+                    PageEntity page = getItem(position);
+                    // Start the edit activity
+                    Context context = itemView.getContext();
+                    Intent intent = new Intent(context, DocumentPageEditActivity.class);
+                    intent.putExtra("page_id", page.id);
+                    context.startActivity(intent);
                 }
-                return false;
+            });
+
+            deleteButton.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION) {
+                    deleteListener.onPageDelete(getItem(position));
+                }
             });
         }
 
         void bind(PageEntity page) {
-            indexTextView.setText(String.valueOf(page.index + 1)); // Display 1-based index
+            indexTextView.setText("Page " + (page.index + 1)); // Display with "Page" prefix
             
             // Load thumbnail from the original URI
             if (page.uri_original != null && !page.uri_original.isEmpty()) {

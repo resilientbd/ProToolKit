@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
+import android.util.Log;
 
 public class ImageFilters {
     
@@ -18,25 +19,19 @@ public class ImageFilters {
         
         Bitmap result = Bitmap.createBitmap(source.getWidth(), source.getHeight(), source.getConfig());
         
+        // Create color matrix for contrast and brightness
         ColorMatrix colorMatrix = new ColorMatrix();
         
-        // Apply contrast - scale RGB values
-        float scale = contrast;
-        float translate = brightness * 255.0f;
+        // Apply contrast and brightness in one operation
+        // This applies contrast scaling and brightness translation properly
+        float brightnessTranslation = brightness * 255.0f;
         
-        // Apply contrast using setScale
-        colorMatrix.setScale(scale, scale, scale, 1.0f);
-        
-        // Apply brightness using ColorMatrix multiplication with a separate matrix
-        ColorMatrix brightnessMatrix = new ColorMatrix();
-        brightnessMatrix.set(new float[] {
-                1, 0, 0, 0, translate,  // Red
-                0, 1, 0, 0, translate,  // Green
-                0, 0, 1, 0, translate,  // Blue
-                0, 0, 0, 1, 0           // Alpha
+        colorMatrix.set(new float[] {
+                contrast, 0, 0, 0, brightnessTranslation,    // Red: contrast scaling + brightness
+                0, contrast, 0, 0, brightnessTranslation,    // Green: contrast scaling + brightness
+                0, 0, contrast, 0, brightnessTranslation,     // Blue: contrast scaling + brightness
+                0, 0, 0, 1, 0                                  // Alpha: no change
         });
-        
-        colorMatrix.postConcat(brightnessMatrix);
         
         Paint paint = new Paint();
         paint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
@@ -73,16 +68,28 @@ public class ImageFilters {
      * Converts bitmap to black and white using a simple threshold
      */
     public static Bitmap toBlackAndWhite(Bitmap source, float threshold) {
+        Log.d("ImageFilters", "toBlackAndWhite called with threshold: " + threshold);
         if (source == null || source.isRecycled()) {
+            Log.d("ImageFilters", "  source is null or recycled, returning source");
             return source;
         }
         
         int width = source.getWidth();
         int height = source.getHeight();
+        Log.d("ImageFilters", "  Processing bitmap: " + width + "x" + height + " config: " + source.getConfig());
+        
+        // Create a result bitmap with a known good configuration
         Bitmap result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         
         int[] pixels = new int[width * height];
         source.getPixels(pixels, 0, width, 0, 0, width, height);
+        
+        int whiteCount = 0, blackCount = 0;
+        
+        int thresholdValue = (int)(threshold * 255);
+        Log.d("ImageFilters", "  Using threshold value: " + thresholdValue + " (threshold param: " + threshold + ")");
+        
+        int minGray = 255, maxGray = 0; // Track min/max grays for debugging
         
         // Calculate average for thresholding
         for (int i = 0; i < pixels.length; i++) {
@@ -94,14 +101,26 @@ public class ImageFilters {
             // Calculate luminance
             int gray = (int) (0.299 * r + 0.587 * g + 0.114 * b);
             
-            if (gray > threshold * 255) {
-                pixels[i] = 0xFFFFFFFF; // White
+            // Track min/max for debugging
+            if (gray < minGray) minGray = gray;
+            if (gray > maxGray) maxGray = gray;
+            
+            if (gray > thresholdValue) {
+                pixels[i] = 0xFFFFFFFF; // White with full alpha
+                whiteCount++;
             } else {
-                pixels[i] = 0xFF000000; // Black
+                pixels[i] = 0xFF000000; // Black with full alpha
+                blackCount++;
             }
         }
         
+        Log.d("ImageFilters", "  Gray value range: " + minGray + " - " + maxGray);
+        
+        Log.d("ImageFilters", "  Black pixels: " + blackCount + ", White pixels: " + whiteCount + ", Total: " + pixels.length);
+        Log.d("ImageFilters", "  Black/White ratio: " + (blackCount * 100.0 / pixels.length) + "% are black");
+        
         result.setPixels(pixels, 0, width, 0, 0, width, height);
+        Log.d("ImageFilters", "  toBlackAndWhite completed");
         return result;
     }
     
@@ -183,39 +202,53 @@ public class ImageFilters {
      * Applies all filter operations based on EditOps
      */
     public static Bitmap applyFilter(Bitmap source, com.faisal.protoolkit.model.EditOps editOps) {
+        Log.d("ImageFilters", "applyFilter called");
         if (editOps == null || editOps.filter == null) {
+            Log.d("ImageFilters", "  editOps or editOps.filter is null, returning source");
             return source;
         }
+        
+        Log.d("ImageFilters", "  Filter mode: " + editOps.filter.mode);
+        Log.d("ImageFilters", "  Contrast: " + editOps.filter.contrast);
+        Log.d("ImageFilters", "  Brightness: " + editOps.filter.brightness);
+        Log.d("ImageFilters", "  Sharpen: " + editOps.filter.sharpen);
         
         Bitmap result = source;
         
         // Apply the selected filter mode
         switch (editOps.filter.mode) {
             case "GRAY":
+                Log.d("ImageFilters", "  Applying GRAY filter");
                 result = toGrayscale(result);
                 break;
             case "BW":
+                Log.d("ImageFilters", "  Applying BW filter with threshold 0.5f");
                 result = toBlackAndWhite(result, 0.5f); // 50% threshold
                 break;
             case "COLOR_BOOST":
+                Log.d("ImageFilters", "  Applying COLOR_BOOST filter");
                 result = applyColorBoost(result);
                 break;
             case "ORIGINAL":
             default:
+                Log.d("ImageFilters", "  Keeping ORIGINAL (no filter)");
                 // Do nothing, keep original
                 break;
         }
         
         // Apply contrast and brightness adjustments
         if (editOps.filter.contrast != 1.0f || editOps.filter.brightness != 0.0f) {
+            Log.d("ImageFilters", "  Applying contrast/brightness: " + editOps.filter.contrast + ", " + editOps.filter.brightness);
             result = applyContrastBrightness(result, editOps.filter.contrast, editOps.filter.brightness);
         }
         
         // Apply sharpening
         if (editOps.filter.sharpen > 0.0f) {
+            Log.d("ImageFilters", "  Applying sharpen: " + editOps.filter.sharpen);
             result = applySharpen(result, editOps.filter.sharpen);
         }
         
+        Log.d("ImageFilters", "  Returning result: " + result.getWidth() + "x" + result.getHeight());
         return result;
     }
 }

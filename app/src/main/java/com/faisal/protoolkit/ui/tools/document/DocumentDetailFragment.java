@@ -134,37 +134,21 @@ public class DocumentDetailFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        adapter = new PageAdapter(viewModel, page -> {
-            // Show options for the page - redirect to document scanner for actual editing
-            Toast.makeText(requireContext(), "Page " + (page.index + 1) + " selected", Toast.LENGTH_SHORT).show();
-        });
+        adapter = new PageAdapter(viewModel, 
+            page -> {
+                // Start the full-screen edit activity for this page
+                android.content.Intent intent = new android.content.Intent(requireContext(), 
+                    com.faisal.protoolkit.ui.tools.document.DocumentPageEditActivity.class);
+                intent.putExtra("page_id", page.id);
+                startActivity(intent);
+            },
+            page -> {
+                // Delete this page
+                showDeletePageConfirmationDialog(page);
+            });
         
         binding.pagesRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false));
         binding.pagesRecyclerView.setAdapter(adapter);
-
-        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.Callback() {
-            @Override
-            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                int dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN;
-                int swipeFlags = 0;
-                return makeMovementFlags(dragFlags, swipeFlags);
-            }
-
-            @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                int fromPosition = viewHolder.getAdapterPosition();
-                int toPosition = target.getAdapterPosition();
-                viewModel.reorderPage(fromPosition, toPosition);
-                return true;
-            }
-
-            @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                // No swipe actions for pages
-            }
-        });
-
-        itemTouchHelper.attachToRecyclerView(binding.pagesRecyclerView);
     }
 
     private void setupObservers() {
@@ -172,15 +156,44 @@ public class DocumentDetailFragment extends Fragment {
             adapter.submitList(pages);
         });
     }
+    
+    private void showDeletePageConfirmationDialog(PageEntity page) {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Delete Page?")
+                .setMessage("Are you sure you want to delete this page? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    viewModel.deletePage(page);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
 
     private void setupButtons() {
-        binding.fabAddPage.setOnClickListener(v -> startEditingDocument());
-
-        binding.btnEdit.setOnClickListener(v -> startEditingDocument());
-
-        binding.btnExport.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Export functionality is in the document scanner", Toast.LENGTH_SHORT).show();
+        binding.fabAddPage.setOnClickListener(v -> {
+            // Add a new page to the document
+            // TODO: Implement add page functionality
+            Toast.makeText(requireContext(), "Add page functionality coming soon", Toast.LENGTH_SHORT).show();
         });
+        
+        binding.btnEdit.setOnClickListener(v -> {
+            // Edit the document
+            // TODO: Implement edit functionality
+            Toast.makeText(requireContext(), "Edit functionality coming soon", Toast.LENGTH_SHORT).show();
+        });
+        
+        binding.btnExport.setOnClickListener(v -> {
+            // Show export options
+            // TODO: Implement export functionality
+            Toast.makeText(requireContext(), "Export functionality coming soon", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void editDocument() {
+        // Navigate to DocumentScannerFragment to edit this document
+        Bundle args = new Bundle();
+        args.putString("document_id", documentId);
+        androidx.navigation.fragment.NavHostFragment.findNavController(this)
+                .navigate(R.id.action_documentDetailFragment_to_documentScannerFragment, args);
     }
 
     private void startEditingDocument() {

@@ -5,9 +5,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.util.Log;
+
 import androidx.annotation.NonNull;
+
 import com.faisal.protoolkit.model.EditOps;
+
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -136,52 +140,101 @@ public class RenderEngine {
             return new EditOps(); // Return default on error
         }
     }
-    
+
     public Bitmap applyFilters(Bitmap originalBitmap, EditOps editOps) {
+        Log.d("RenderEngine", "applyFilters called");
         if (originalBitmap == null) {
+            Log.d("RenderEngine", "  originalBitmap is null");
             return null;
         }
-        
+
+        if (originalBitmap.isRecycled()) {
+            Log.d("RenderEngine", "  originalBitmap is recycled");
+            return null;
+        }
+
+        Log.d("RenderEngine", "  originalBitmap size: " + originalBitmap.getWidth() + "x" + originalBitmap.getHeight());
+
         if (editOps == null) {
+            Log.d("RenderEngine", "  editOps is null, returning copy of original");
             return originalBitmap.copy(originalBitmap.getConfig(), true);
         }
-        
+
         // Clone the bitmap to avoid modifying the original
         Bitmap bitmap = originalBitmap.copy(originalBitmap.getConfig(), true);
-        
+        Log.d("RenderEngine", "  Created bitmap copy: " + bitmap.getWidth() + "x" + bitmap.getHeight());
+
         Bitmap result = bitmap; // Keep original reference to recycle later
-        
+
         try {
             // Apply rotation
             if (editOps.rotate != 0) {
+                Log.d("RenderEngine", "  Applying rotation: " + editOps.rotate + " degrees");
                 result = rotateBitmap(result, editOps.rotate);
+                Log.d("RenderEngine", "  After rotation: " + result.getWidth() + "x" + result.getHeight());
             }
-            
+
             // Apply filter operations
+            Log.d("RenderEngine", "  Applying filters");
+            if (editOps.filter != null) {
+                Log.d("RenderEngine", "    Filter mode: " + editOps.filter.mode);
+                Log.d("RenderEngine", "    Contrast: " + editOps.filter.contrast);
+                Log.d("RenderEngine", "    Brightness: " + editOps.filter.brightness);
+                Log.d("RenderEngine", "    Sharpen: " + editOps.filter.sharpen);
+            }
             result = ImageFilters.applyFilter(result, editOps);
-            
+            Log.d("RenderEngine", "  After applying filters: " + result.getWidth() + "x" + result.getHeight());
+
             // Apply crop operations if available
             if (editOps.hasCrop()) {
+                Log.d("RenderEngine", "  Applying crop");
                 result = cropBitmap(result, editOps);
             }
-            
+
         } catch (Exception e) {
             e.printStackTrace();
             // Return original bitmap if processing fails
+            // But first check if the original bitmap is still valid
             if (result != bitmap) {
                 // If we created a new bitmap in processing, recycle it
-                if (result != originalBitmap && result != bitmap) {
-                    result.recycle();
+                try {
+                    if (result != null && !result.isRecycled()) {
+                        result.recycle();
+                    }
+                } catch (Exception recycleException) {
+                    // Ignore recycling exceptions
                 }
             }
-            return originalBitmap.copy(originalBitmap.getConfig(), true);
+
+            // Try to return a copy of the original bitmap if it's still valid
+            if (originalBitmap != null && !originalBitmap.isRecycled()) {
+                try {
+                    Log.d("RenderEngine", "  Returning copy of original bitmap due to exception");
+                    return originalBitmap.copy(originalBitmap.getConfig(), true);
+                } catch (Exception copyException) {
+                    // If copying fails, return null
+                    Log.d("RenderEngine", "  Failed to copy original bitmap: " + copyException.getMessage());
+                    return null;
+                }
+            } else {
+                // Original bitmap is invalid, return null
+                Log.d("RenderEngine", "  Original bitmap is invalid, returning null");
+                return null;
+            }
         }
-        
+
         // If the result is not the original bitmap we copied, recycle the original copy
         if (result != bitmap) {
-            bitmap.recycle();
+            try {
+                if (bitmap != null && !bitmap.isRecycled()) {
+                    bitmap.recycle();
+                }
+            } catch (Exception e) {
+                // Ignore recycling exceptions
+            }
         }
-        
+
+        Log.d("RenderEngine", "  Returning result bitmap: " + result.getWidth() + "x" + result.getHeight());
         return result;
     }
     
@@ -223,13 +276,15 @@ public class RenderEngine {
         Matrix matrix = new Matrix();
         matrix.postRotate(degrees);
         
-        Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-        
-        if (rotated != bitmap) {
-            bitmap.recycle();
+        try {
+            Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+            return rotated;
+        } catch (OutOfMemoryError e) {
+            e.printStackTrace();
+            // Return original bitmap if rotation fails due to memory issues
+            return bitmap;
         }
-        
-        return rotated;
+        // Note: We don't recycle the original bitmap here because the caller is responsible for it
     }
     
     private Bitmap cropBitmap(Bitmap bitmap, EditOps editOps) {
