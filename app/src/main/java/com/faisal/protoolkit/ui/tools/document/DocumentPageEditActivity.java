@@ -234,10 +234,11 @@ public class DocumentPageEditActivity extends AppCompatActivity {
 
     private void updateFilterButtonSelection(String mode) {
         // Update which filter button appears selected based on current mode
-        binding.btnFilterOriginal.setAlpha(mode.equals("ORIGINAL") ? 1.0f : 0.5f);
-        binding.btnFilterGray.setAlpha(mode.equals("GRAY") ? 1.0f : 0.5f);
-        binding.btnFilterBw.setAlpha(mode.equals("BW") ? 1.0f : 0.5f);
-        binding.btnFilterBoost.setAlpha(mode.equals("COLOR_BOOST") ? 1.0f : 0.5f);
+        Log.d("DocumentPageEdit", "Updating filter button selection for mode: " + mode);
+        binding.btnFilterOriginal.setAlpha(mode != null && mode.equals("ORIGINAL") ? 1.0f : 0.5f);
+        binding.btnFilterGray.setAlpha(mode != null && mode.equals("GRAY") ? 1.0f : 0.5f);
+        binding.btnFilterBw.setAlpha(mode != null && mode.equals("BW") ? 1.0f : 0.5f);
+        binding.btnFilterBoost.setAlpha(mode != null && mode.equals("COLOR_BOOST") ? 1.0f : 0.5f);
     }
 
     private void loadInitialImage() {
