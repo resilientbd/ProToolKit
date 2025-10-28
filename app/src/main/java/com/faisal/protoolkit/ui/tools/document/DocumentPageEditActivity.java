@@ -7,14 +7,19 @@ import android.animation.ObjectAnimator;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.slider.Slider;
 
 import android.graphics.PointF;
@@ -41,7 +46,7 @@ public class DocumentPageEditActivity extends AppCompatActivity {
     private PointF currentCenter = null;
     private boolean isTopActionBarVisible = false;
     private boolean isFilterOptionsVisible = false;
-    private boolean isAdjustmentsVisible = false;
+    private boolean isAdjustmentsPanelVisible = false;
     
     // Animation duration in milliseconds
     private static final int ANIMATION_DURATION = 300;
@@ -96,13 +101,14 @@ public class DocumentPageEditActivity extends AppCompatActivity {
 
                         runOnUiThread(() -> {
                             setupUI();
-                            loadInitialImage();
-                            // Only enable controls after both originalBitmap and currentEditOps are properly initialized
-                            if (originalBitmap != null && !originalBitmap.isRecycled() && currentEditOps != null) {
-                                enableUIControls();
-                            } else {
-                                Log.e("DocumentPageEdit", "Cannot enable UI controls - originalBitmap or currentEditOps not ready");
-                            }
+        loadInitialImage();
+        setupAdjustmentsPanel(); // Initialize the adjustments panel
+        // Only enable controls after both originalBitmap and currentEditOps are properly initialized
+        if (originalBitmap != null && !originalBitmap.isRecycled() && currentEditOps != null) {
+            enableUIControls();
+        } else {
+            Log.e("DocumentPageEdit", "Cannot enable UI controls - originalBitmap or currentEditOps not ready");
+        }
                         });
                     }
                 }
@@ -152,24 +158,22 @@ public class DocumentPageEditActivity extends AppCompatActivity {
         binding.seekbarBrightness.setEnabled(false);
         binding.seekbarSharpen.setEnabled(false);
         
-        // Setup rotation button (icon only)
+        // Setup rotation button (now in adjustments sheet)
         binding.btnRotateRight.setOnClickListener(v -> rotateRight());
 
-        // Setup crop button (icon only)
+        // Setup crop button (now in adjustments sheet)
         binding.btnCrop.setOnClickListener(v -> showCropOptions());
 
-        // Setup "Action" button to show/hide adjustments sheet
+        // Setup "Action" button to show/hide adjustments panel
         binding.btnAction.setOnClickListener(v -> {
-            Log.d("DocumentPageEdit", "Action button clicked - starting action");
-            Log.d("DocumentPageEdit", "isAdjustmentsVisible before: " + isAdjustmentsVisible);
-            Log.d("DocumentPageEdit", "adjustmentsSheet visibility before: " + binding.adjustmentsSheet.getVisibility());
+            Log.d("DocumentPageEdit", "Action button clicked");
+            Log.d("DocumentPageEdit", "isAdjustmentsPanelVisible: " + isAdjustmentsPanelVisible);
             
-            showAdjustmentsSheet();
-            hideTopActionBar(); // Hide the top bar when showing adjustments
-            hideFilterOptions(); // Also hide filter options when showing adjustments
-            
-            Log.d("DocumentPageEdit", "Called showAdjustmentsSheet and hide methods");
-            Log.d("DocumentPageEdit", "isAdjustmentsVisible after: " + isAdjustmentsVisible);
+            if (isAdjustmentsPanelVisible) {
+                hideAdjustmentsSheet();
+            } else {
+                showAdjustmentsSheet();
+            }
         });
 
         // Setup "Filter" button to show/hide filter options
@@ -232,26 +236,57 @@ public class DocumentPageEditActivity extends AppCompatActivity {
             }
         });
 
-        // Setup tap listener for the image view to toggle top action bar
-        binding.imageViewPreview.setOnTouchListener((v, event) -> {
-            if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
-                toggleTopActionBar();
+        // Setup touch listener for the image view to handle tap and long press
+        binding.imageViewPreview.setOnTouchListener(new View.OnTouchListener() {
+            private static final int LONG_PRESS_TIMEOUT = 500; // milliseconds
+            private boolean isLongPressDetected = false;
+            private android.os.Handler handler = new android.os.Handler();
+            private Runnable longPressRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    isLongPressDetected = true;
+                    showTopActionBar();
+                }
+            };
+            
+            @Override
+            public boolean onTouch(View v, android.view.MotionEvent event) {
+                switch (event.getAction()) {
+                    case android.view.MotionEvent.ACTION_DOWN:
+                        isLongPressDetected = false;
+                        handler.postDelayed(longPressRunnable, LONG_PRESS_TIMEOUT);
+                        break;
+                    case android.view.MotionEvent.ACTION_UP:
+                        handler.removeCallbacks(longPressRunnable);
+                        if (!isLongPressDetected) {
+                            // Short tap - toggle the top action bar
+                            toggleTopActionBar();
+                        }
+                        break;
+                    case android.view.MotionEvent.ACTION_MOVE:
+                        // If user moves finger significantly, cancel long press
+                        break;
+                    case android.view.MotionEvent.ACTION_CANCEL:
+                        handler.removeCallbacks(longPressRunnable);
+                        break;
+                }
+                return false; // Return false to allow the SubsamplingScaleImageView to handle touch events
             }
-            return false; // Return false to allow the SubsamplingScaleImageView to handle touch events
         });
         
-        // Add click listener to image to hide all panels when clicked outside
-        binding.imageViewPreview.setOnClickListener(v -> {
-            if (isTopActionBarVisible) {
-                hideTopActionBar();
-            }
-            if (isFilterOptionsVisible) {
-                hideFilterOptions();
-            }
-            if (isAdjustmentsVisible) {
-                hideAdjustmentsSheet();
-            }
-        });
+        // The touch listener above now handles both tap and long press
+        // We don't need a separate click listener
+        
+        // Initialize and setup bottom sheet behavior
+        setupAdjustmentsPanel();
+    }
+    
+    private void setupAdjustmentsPanel() {
+        // Initialize adjustments panel - similar to filter options panel
+        if (binding.adjustmentsSheet.getVisibility() == View.GONE) {
+            binding.adjustmentsSheet.setVisibility(View.GONE);
+        }
+        isAdjustmentsPanelVisible = false;
     }
 
     private void enableUIControls() {
@@ -308,132 +343,254 @@ public class DocumentPageEditActivity extends AppCompatActivity {
     }
     
     private void showTopActionBar() {
+        Log.d("DocumentPageEdit", "showTopActionBar called");
+        Log.d("DocumentPageEdit", "Current visibility: " + binding.topActionBar.getVisibility());
+        Log.d("DocumentPageEdit", "Current translationY: " + binding.topActionBar.getTranslationY());
+        
         if (binding.topActionBar.getVisibility() == View.GONE) {
             binding.topActionBar.setVisibility(View.VISIBLE);
-            binding.topActionBar.setTranslationY(-binding.topActionBar.getHeight());
+            binding.topActionBar.setAlpha(0f);
             
-            ObjectAnimator animator = ObjectAnimator.ofFloat(binding.topActionBar, "translationY", 0);
-            animator.setDuration(ANIMATION_DURATION);
-            animator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationStart(Animator animation) {
-                    binding.topActionBar.setVisibility(View.VISIBLE);
-                }
+            // Use post to ensure the view is measured before getting its height
+            binding.topActionBar.post(() -> {
+                Log.d("DocumentPageEdit", "View height: " + binding.topActionBar.getHeight());
+                
+                // Set initial position above the screen
+                binding.topActionBar.setTranslationY(-binding.topActionBar.getHeight());
+                
+                // Create animator to slide in from top
+                ObjectAnimator slideIn = ObjectAnimator.ofFloat(binding.topActionBar, "translationY", 0);
+                slideIn.setDuration(ANIMATION_DURATION);
+                
+                // Create animator to fade in
+                ObjectAnimator fadeIn = ObjectAnimator.ofFloat(binding.topActionBar, "alpha", 0f, 1f);
+                fadeIn.setDuration(ANIMATION_DURATION);
+                
+                // Combine animations
+                AnimatorSet animatorSet = new AnimatorSet();
+                animatorSet.playTogether(slideIn, fadeIn);
+                
+                animatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationStart(Animator animation) {
+                        binding.topActionBar.setVisibility(View.VISIBLE);
+                    }
+                    
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        isTopActionBarVisible = true;
+                        Log.d("DocumentPageEdit", "Top action bar shown");
+                    }
+                });
+                animatorSet.start();
             });
-            animator.start();
+        } else {
+            // If already visible, just make sure it's fully shown
+            binding.topActionBar.setAlpha(1f);
+            binding.topActionBar.setTranslationY(0);
+            isTopActionBarVisible = true;
         }
-        isTopActionBarVisible = true;
 
         // Hide other panels when showing top bar
         if (isFilterOptionsVisible) {
             hideFilterOptions();
         }
-        if (isAdjustmentsVisible) {
+        if (isAdjustmentsPanelVisible) {
             hideAdjustmentsSheet();
         }
     }
     
     private void hideTopActionBar() {
         if (binding.topActionBar.getVisibility() == View.VISIBLE) {
-            ObjectAnimator animator = ObjectAnimator.ofFloat(binding.topActionBar, "translationY", 
+            // Create animator to slide out to top
+            ObjectAnimator slideOut = ObjectAnimator.ofFloat(binding.topActionBar, "translationY", 
                     -binding.topActionBar.getHeight());
-            animator.setDuration(ANIMATION_DURATION);
-            animator.addListener(new AnimatorListenerAdapter() {
+            slideOut.setDuration(ANIMATION_DURATION);
+            
+            // Create animator to fade out
+            ObjectAnimator fadeOut = ObjectAnimator.ofFloat(binding.topActionBar, "alpha", 1f, 0f);
+            fadeOut.setDuration(ANIMATION_DURATION);
+            
+            // Combine animations
+            AnimatorSet animatorSet = new AnimatorSet();
+            animatorSet.playTogether(slideOut, fadeOut);
+            
+            animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     binding.topActionBar.setVisibility(View.GONE);
+                    isTopActionBarVisible = false;
+                    Log.d("DocumentPageEdit", "Top action bar hidden");
                 }
             });
-            animator.start();
+            animatorSet.start();
+        } else {
+            isTopActionBarVisible = false;
         }
-        isTopActionBarVisible = false;
     }
     
     private void showFilterOptions() {
+        Log.d("DocumentPageEdit", "showFilterOptions called");
+        Log.d("DocumentPageEdit", "Current filter scroll view visibility: " + binding.filterScrollView.getVisibility());
+        
         if (binding.filterScrollView.getVisibility() == View.GONE) {
             binding.filterScrollView.setVisibility(View.VISIBLE);
-            binding.filterScrollView.setTranslationY(-binding.filterScrollView.getHeight());
+            binding.filterScrollView.setAlpha(0f);
             
-            ObjectAnimator animator = ObjectAnimator.ofFloat(binding.filterScrollView, "translationY", 0f);
-            animator.setDuration(ANIMATION_DURATION);
-            animator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationStart(Animator animation) {
-                    binding.filterScrollView.setVisibility(View.VISIBLE);
-                }
+            // Use post to ensure the view is measured before getting its height
+            binding.filterScrollView.post(() -> {
+                Log.d("DocumentPageEdit", "Filter scroll view height: " + binding.filterScrollView.getHeight());
+                
+                // Set initial position above the screen
+                binding.filterScrollView.setTranslationY(-binding.filterScrollView.getHeight());
+                
+                // Create animator to slide in from top
+                ObjectAnimator slideIn = ObjectAnimator.ofFloat(binding.filterScrollView, "translationY", 0f);
+                slideIn.setDuration(ANIMATION_DURATION);
+                
+                // Create animator to fade in
+                ObjectAnimator fadeIn = ObjectAnimator.ofFloat(binding.filterScrollView, "alpha", 0f, 1f);
+                fadeIn.setDuration(ANIMATION_DURATION);
+                
+                // Combine animations
+                AnimatorSet animatorSet = new AnimatorSet();
+                animatorSet.playTogether(slideIn, fadeIn);
+                
+                animatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationStart(Animator animation) {
+                        binding.filterScrollView.setVisibility(View.VISIBLE);
+                    }
+                    
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        isFilterOptionsVisible = true;
+                        Log.d("DocumentPageEdit", "Filter options shown");
+                    }
+                });
+                animatorSet.start();
             });
-            animator.start();
+        } else {
+            // If already visible, just make sure it's fully shown
+            binding.filterScrollView.setAlpha(1f);
+            binding.filterScrollView.setTranslationY(0);
+            isFilterOptionsVisible = true;
         }
-        isFilterOptionsVisible = true;
+
+        // Hide other panels when showing filter options
+        if (isTopActionBarVisible) {
+            hideTopActionBar();
+        }
+        if (isAdjustmentsPanelVisible) {
+            hideAdjustmentsSheet();
+        }
     }
     
     private void hideFilterOptions() {
         if (binding.filterScrollView.getVisibility() == View.VISIBLE) {
-            ObjectAnimator animator = ObjectAnimator.ofFloat(binding.filterScrollView, "translationY", 
+            // Create animator to slide out to top
+            ObjectAnimator slideOut = ObjectAnimator.ofFloat(binding.filterScrollView, "translationY", 
                     -binding.filterScrollView.getHeight());
-            animator.setDuration(ANIMATION_DURATION);
-            animator.addListener(new AnimatorListenerAdapter() {
+            slideOut.setDuration(ANIMATION_DURATION);
+            
+            // Create animator to fade out
+            ObjectAnimator fadeOut = ObjectAnimator.ofFloat(binding.filterScrollView, "alpha", 1f, 0f);
+            fadeOut.setDuration(ANIMATION_DURATION);
+            
+            // Combine animations
+            AnimatorSet animatorSet = new AnimatorSet();
+            animatorSet.playTogether(slideOut, fadeOut);
+            
+            animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     binding.filterScrollView.setVisibility(View.GONE);
+                    isFilterOptionsVisible = false;
+                    Log.d("DocumentPageEdit", "Filter options hidden");
                 }
             });
-            animator.start();
+            animatorSet.start();
+        } else {
+            isFilterOptionsVisible = false;
         }
-        isFilterOptionsVisible = false;
     }
     
     private void showAdjustmentsSheet() {
         Log.d("DocumentPageEdit", "showAdjustmentsSheet called");
         Log.d("DocumentPageEdit", "adjustmentsSheet visibility: " + binding.adjustmentsSheet.getVisibility());
         
+        // Hide other panels first
+        if (isTopActionBarVisible) {
+            hideTopActionBar();
+        }
+        if (isFilterOptionsVisible) {
+            hideFilterOptions();
+        }
+        
         if (binding.adjustmentsSheet.getVisibility() == View.GONE) {
-            Log.d("DocumentPageEdit", "Showing adjustments sheet - initial state is GONE");
-            
-            // Set the state immediately
-            isAdjustmentsVisible = true;
-            
-            // Make sure it's visible first
             binding.adjustmentsSheet.setVisibility(View.VISIBLE);
-            binding.adjustmentsSheet.setAlpha(0f); // Start transparent
+            binding.adjustmentsSheet.setAlpha(0f);
+            binding.adjustmentsSheet.setTranslationY(-binding.adjustmentsSheet.getHeight());
             
-            // Use a simple fade-in animation instead of translation
+            // Create animator to slide in from top
+            ObjectAnimator slideIn = ObjectAnimator.ofFloat(binding.adjustmentsSheet, "translationY", 0);
+            slideIn.setDuration(ANIMATION_DURATION);
+            
+            // Create animator to fade in
             ObjectAnimator fadeIn = ObjectAnimator.ofFloat(binding.adjustmentsSheet, "alpha", 0f, 1f);
             fadeIn.setDuration(ANIMATION_DURATION);
-            fadeIn.addListener(new AnimatorListenerAdapter() {
+            
+            // Combine animations
+            AnimatorSet animatorSet = new AnimatorSet();
+            animatorSet.playTogether(slideIn, fadeIn);
+            
+            animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationStart(Animator animation) {
-                    Log.d("DocumentPageEdit", "Adjustments sheet fade-in started");
                     binding.adjustmentsSheet.setVisibility(View.VISIBLE);
                 }
                 
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    Log.d("DocumentPageEdit", "Adjustments sheet fade-in ended");
-                    // State is already set above
+                    isAdjustmentsPanelVisible = true;
+                    Log.d("DocumentPageEdit", "Adjustments sheet shown");
                 }
             });
-            
-            fadeIn.start();
-            Log.d("DocumentPageEdit", "Started fade-in animation to show adjustments sheet");
+            animatorSet.start();
         } else {
-            Log.d("DocumentPageEdit", "Adjustments sheet already visible");
-            isAdjustmentsVisible = true;
+            // If already visible, just make sure it's fully shown
+            binding.adjustmentsSheet.setAlpha(1f);
+            binding.adjustmentsSheet.setTranslationY(0);
+            isAdjustmentsPanelVisible = true;
         }
     }
     
     private void hideAdjustmentsSheet() {
         if (binding.adjustmentsSheet.getVisibility() == View.VISIBLE) {
+            // Create animator to slide out to top
+            ObjectAnimator slideOut = ObjectAnimator.ofFloat(binding.adjustmentsSheet, "translationY", 
+                    -binding.adjustmentsSheet.getHeight());
+            slideOut.setDuration(ANIMATION_DURATION);
+            
+            // Create animator to fade out
             ObjectAnimator fadeOut = ObjectAnimator.ofFloat(binding.adjustmentsSheet, "alpha", 1f, 0f);
             fadeOut.setDuration(ANIMATION_DURATION);
-            fadeOut.addListener(new AnimatorListenerAdapter() {
+            
+            // Combine animations
+            AnimatorSet animatorSet = new AnimatorSet();
+            animatorSet.playTogether(slideOut, fadeOut);
+            
+            animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     binding.adjustmentsSheet.setVisibility(View.GONE);
-                    isAdjustmentsVisible = false;
+                    isAdjustmentsPanelVisible = false;
+                    Log.d("DocumentPageEdit", "Adjustments sheet hidden");
                 }
             });
-            fadeOut.start();
+            animatorSet.start();
+        } else {
+            isAdjustmentsPanelVisible = false;
         }
     }
     
@@ -712,17 +869,17 @@ public boolean onSupportNavigateUp() {
     return true;
 }
 
-@Override
-protected void onDestroy() {
-    super.onDestroy();
-    // Recycle bitmaps to free memory
-    if (originalBitmap != null && !originalBitmap.isRecycled()) {
-        originalBitmap.recycle();
-        Log.d("DocumentPageEdit", "Recycled originalBitmap in onDestroy");
-    } else {
-        Log.d("DocumentPageEdit", "originalBitmap was already recycled or null in onDestroy");
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Recycle bitmaps to free memory
+        if (originalBitmap != null && !originalBitmap.isRecycled()) {
+            originalBitmap.recycle();
+            Log.d("DocumentPageEdit", "Recycled originalBitmap in onDestroy");
+        } else {
+            Log.d("DocumentPageEdit", "originalBitmap was already recycled or null in onDestroy");
+        }
+        // Note: We don't keep references to processed bitmaps, so no need to recycle them
+        binding = null;
     }
-    // Note: We don't keep references to processed bitmaps, so no need to recycle them
-    binding = null;
-}
 }

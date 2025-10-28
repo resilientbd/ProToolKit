@@ -33,7 +33,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="?attr/actionBarSize"
-        android:layout_marginBottom="96dp"
+        android:layout_marginBottom="100dp"
         android:background="?attr/colorSurface"
         android:contentDescription="Document preview"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
@@ -50,7 +50,6 @@
         android:background="@drawable/bg_card_surface"
         android:elevation="8dp"
         android:layout_margin="16dp"
-        android:translationY="-100dp"
         android:animateLayoutChanges="true"
         android:visibility="gone">
 
@@ -87,7 +86,6 @@
         android:background="@drawable/bg_card_surface"
         android:elevation="8dp"
         android:layout_margin="16dp"
-        android:translationY="-100dp"
         android:animateLayoutChanges="true"
         android:visibility="gone"
         android:scrollbars="none">
@@ -213,44 +211,7 @@
 
     </HorizontalScrollView>
 
-    <!-- Bottom action bar -->
-    <com.google.android.material.bottomappbar.BottomAppBar
-        android:id="@+id/bottom_bar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:backgroundTint="?attr/colorSurface"
-        app:elevation="8dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_rotate_right"
-                style="@style/Widget.Material3.Button.IconButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                app:icon="@drawable/ic_camera"
-                android:contentDescription="Rotate" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_crop"
-                style="@style/Widget.Material3.Button.IconButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                app:icon="@drawable/ic_edit_crop"
-                android:contentDescription="Crop" />
-
-
-
-        </LinearLayout>
-
-    </com.google.android.material.bottomappbar.BottomAppBar>
+    
 
     <!-- Apply button (like GCAM) -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -266,20 +227,20 @@
         app:backgroundTint="?attr/colorPrimary"
         app:fabSize="normal" />
 
-    <!-- Adjustments bottom sheet dialog -->
+    <!-- Adjustments options panel -->
     <LinearLayout
         android:id="@+id/adjustments_sheet"
         android:layout_width="match_parent"
-        android:layout_height="500dp"
-        android:layout_gravity="bottom"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:layout_marginTop="?attr/actionBarSize"
         android:orientation="vertical"
         android:padding="24dp"
         android:background="@drawable/bg_card_surface"
-        android:elevation="16dp"
-        android:translationY="-300dp"
+        android:elevation="8dp"
+        android:layout_margin="16dp"
         android:animateLayoutChanges="true"
-        android:visibility="gone"
-        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+        android:visibility="gone">
 
         <TextView
             android:layout_width="match_parent"
@@ -414,6 +375,37 @@
             android:layout_height="wrap_content"
             android:text="Reset"
             android:layout_marginTop="16dp" />
+
+        <!-- Additional action buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp"
+            android:weightSum="2"
+            android:baselineAligned="false">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_rotate_right"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Rotate"
+                app:icon="@drawable/ic_camera" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_crop"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Crop"
+                app:icon="@drawable/ic_edit_crop" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
