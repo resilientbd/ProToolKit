@@ -67,6 +67,10 @@
             android:name=".ui.tools.document.DocumentPageEditActivity"
             android:exported="false"
             android:theme="@style/Theme.ProToolkit" />
+            
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            />
     </application>
 
 </manifest>

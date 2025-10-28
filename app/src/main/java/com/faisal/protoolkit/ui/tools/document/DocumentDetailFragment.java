@@ -27,6 +27,7 @@ import com.faisal.protoolkit.databinding.FragmentDocumentDetailBinding;
 import com.faisal.protoolkit.data.database.AppDatabase;
 import com.faisal.protoolkit.data.entities.PageEntity;
 import com.faisal.protoolkit.ui.tools.document.adapters.PageAdapter;
+import com.faisal.protoolkit.ui.tools.document.DocumentPageEditActivity;
 import com.faisal.protoolkit.ui.tools.document.viewmodels.DocumentDetailViewModel;
 import com.faisal.protoolkit.util.FileManager;
 import com.faisal.protoolkit.util.ImageUtils;

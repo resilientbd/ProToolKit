@@ -121,6 +121,10 @@ dependencies {
     // Image zoom and scale
     implementation 'com.davemorrissey.labs:subsampling-scale-image-view-androidx:3.10.0'
     
+    // Image cropping
+    implementation "com.github.yalantis:ucrop:2.2.8"
+
+    
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:34.4.0"))
 

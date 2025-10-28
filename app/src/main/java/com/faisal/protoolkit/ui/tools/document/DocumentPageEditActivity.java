@@ -4,8 +4,18 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -14,16 +24,17 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.davemorrissey.labs.subscaleview.ImageSource;
-import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
-import com.google.android.material.bottomsheet.BottomSheetBehavior;
-import com.google.android.material.slider.Slider;
+import androidx.core.content.ContextCompat;
 
 import android.graphics.PointF;
 import android.widget.ImageView;
+
+import com.davemorrissey.labs.subscaleview.ImageSource;
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import com.faisal.protoolkit.R;
 import com.faisal.protoolkit.databinding.ActivityDocumentPageEditBinding;
 import com.faisal.protoolkit.model.EditOps;
@@ -31,7 +42,11 @@ import com.faisal.protoolkit.data.database.AppDatabase;
 import com.faisal.protoolkit.data.entities.PageEntity;
 import com.faisal.protoolkit.util.RenderEngine;
 
+import com.yalantis.ucrop.UCrop;
+
 import java.io.File;
+import java.io.IOException;
+import java.io.FileOutputStream;
 
 public class DocumentPageEditActivity extends AppCompatActivity {
     private ActivityDocumentPageEditBinding binding;
@@ -47,6 +62,9 @@ public class DocumentPageEditActivity extends AppCompatActivity {
     private boolean isTopActionBarVisible = false;
     private boolean isFilterOptionsVisible = false;
     private boolean isAdjustmentsPanelVisible = false;
+    
+    // ActivityResultLauncher for crop image
+    private ActivityResultLauncher<Intent> cropImageLauncher;
     
     // Animation duration in milliseconds
     private static final int ANIMATION_DURATION = 300;
@@ -115,6 +133,50 @@ public class DocumentPageEditActivity extends AppCompatActivity {
             }
         });
         loadPageThread.start();
+        
+        // Initialize the crop image launcher for uCrop
+        cropImageLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    // Handle successful crop result
+                    Uri croppedImageUri = UCrop.getOutput(result.getData());
+                    Log.d("DocumentPageEdit", "Crop successful, result URI: " + croppedImageUri);
+                    
+                    if (croppedImageUri != null) {
+                        try {
+                            // Load the cropped image
+                            Bitmap croppedBitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(croppedImageUri));
+                            if (croppedBitmap != null) {
+                                // Update the original bitmap with the cropped version
+                                if (originalBitmap != null && !originalBitmap.isRecycled()) {
+                                    originalBitmap.recycle();
+                                }
+                                originalBitmap = croppedBitmap;
+                                
+                                // Update the preview with the cropped image
+                                binding.imageViewPreview.setImage(ImageSource.bitmap(originalBitmap.copy(originalBitmap.getConfig(), true)));
+                                
+                                // Apply current filters to the cropped image
+                                applyFilters();
+                                
+                                Toast.makeText(this, "Image cropped successfully", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(this, "Failed to load cropped image", Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (Exception e) {
+                            Log.e("DocumentPageEdit", "Error loading cropped image: " + e.getMessage());
+                            Toast.makeText(this, "Error loading cropped image: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    }
+                } else if (result.getResultCode() == UCrop.RESULT_ERROR && result.getData() != null) {
+                    // Handle crop error
+                    Throwable cropError = UCrop.getError(result.getData());
+                    Log.e("DocumentPageEdit", "Crop error: " + cropError.getMessage());
+                    Toast.makeText(this, "Crop error: " + cropError.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            }
+        );
     }
 
     private void setupUI() {
@@ -755,9 +817,53 @@ public class DocumentPageEditActivity extends AppCompatActivity {
     }
 
     private void showCropOptions() {
-        // For now, show a toast with "Coming Soon" message
-        Toast.makeText(this, "Crop functionality coming soon", Toast.LENGTH_SHORT).show();
-        // In the future, implement actual crop dialog with crop rectangle overlay
+        Log.d("DocumentPageEdit", "showCropOptions called");
+        
+        // Save the current image to a temporary file for cropping
+        if (originalBitmap != null && !originalBitmap.isRecycled()) {
+            try {
+                // Create a temporary file to store the current image
+                File tempDir = new File(getCacheDir(), "cropping");
+                if (!tempDir.exists()) {
+                    tempDir.mkdirs();
+                }
+                
+                File tempFile = new File(tempDir, "temp_image_for_crop.jpg");
+                
+                // Compress and save the bitmap to the temporary file
+                FileOutputStream out = new FileOutputStream(tempFile);
+                originalBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+                out.close();
+                
+                // Create output file for cropped image
+                File outputFile = new File(tempDir, "cropped_image.jpg");
+                
+                // Launch uCrop with the image
+                UCrop.Options options = new UCrop.Options();
+                options.setCompressionFormat(Bitmap.CompressFormat.JPEG);
+                options.setCompressionQuality(90);
+                options.setHideBottomControls(false);
+                options.setFreeStyleCropEnabled(true);
+                options.setShowCropGrid(true);
+                options.setToolbarTitle("Crop Image");
+                options.setToolbarColor(ContextCompat.getColor(this, R.color.md_theme_primary));
+                options.setStatusBarColor(ContextCompat.getColor(this, R.color.md_theme_primary_dark));
+                options.setActiveControlsWidgetColor(ContextCompat.getColor(this, R.color.md_theme_primary));
+                
+                UCrop.of(Uri.fromFile(tempFile), Uri.fromFile(outputFile))
+                    .withOptions(options)
+                    .start(this);
+                        
+            } catch (IOException e) {
+                Log.e("DocumentPageEdit", "Error preparing image for crop: " + e.getMessage());
+                Toast.makeText(this, "Error preparing image for crop: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            } catch (Exception e) {
+                Log.e("DocumentPageEdit", "Unexpected error preparing image for crop: " + e.getMessage());
+                Toast.makeText(this, "Unexpected error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        } else {
+            Toast.makeText(this, "Image not available for cropping", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void applyFilters() {
@@ -869,6 +975,52 @@ public boolean onSupportNavigateUp() {
     return true;
 }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        // Handle the result from uCrop
+        if (requestCode == UCrop.REQUEST_CROP) {
+            if (resultCode == RESULT_OK) {
+                Uri resultUri = UCrop.getOutput(data);
+                Log.d("DocumentPageEdit", "Crop successful, result URI: " + resultUri);
+                
+                if (resultUri != null) {
+                    try {
+                        // Load the cropped image
+                        Bitmap croppedBitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(resultUri));
+                        if (croppedBitmap != null) {
+                            // Update the original bitmap with the cropped version
+                            if (originalBitmap != null && !originalBitmap.isRecycled()) {
+                                originalBitmap.recycle();
+                            }
+                            originalBitmap = croppedBitmap;
+                            
+                            // Update the preview with the cropped image
+                            binding.imageViewPreview.setImage(ImageSource.bitmap(originalBitmap.copy(originalBitmap.getConfig(), true)));
+                            
+                            // Apply current filters to the cropped image
+                            applyFilters();
+                            
+                            Toast.makeText(this, "Image cropped successfully", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(this, "Failed to load cropped image", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        Log.e("DocumentPageEdit", "Error loading cropped image: " + e.getMessage());
+                        Toast.makeText(this, "Error loading cropped image: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    Toast.makeText(this, "Crop result URI is null", Toast.LENGTH_SHORT).show();
+                }
+            } else if (resultCode == UCrop.RESULT_ERROR) {
+                Throwable cropError = UCrop.getError(data);
+                Log.e("DocumentPageEdit", "Crop error: " + cropError.getMessage());
+                Toast.makeText(this, "Crop error: " + cropError.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+    
     @Override
     protected void onDestroy() {
         super.onDestroy();
