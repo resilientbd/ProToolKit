@@ -2,8 +2,11 @@ package com.faisal.protoolkit.ui.tools.document;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,13 +18,15 @@ import androidx.activity.result.IntentSenderRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.faisal.protoolkit.BuildConfig;
 import com.faisal.protoolkit.R;
 import com.faisal.protoolkit.databinding.FragmentDocumentDetailBinding;
 import com.faisal.protoolkit.data.database.AppDatabase;
@@ -31,6 +36,7 @@ import com.faisal.protoolkit.ui.tools.document.DocumentPageEditActivity;
 import com.faisal.protoolkit.ui.tools.document.viewmodels.DocumentDetailViewModel;
 import com.faisal.protoolkit.util.FileManager;
 import com.faisal.protoolkit.util.ImageUtils;
+import com.faisal.protoolkit.util.PdfExportUtil;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanner;
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions;
@@ -39,6 +45,7 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -169,6 +176,138 @@ public class DocumentDetailFragment extends Fragment {
                 .show();
     }
 
+    private void exportToPdf() {
+        if (documentId == null) {
+            Toast.makeText(requireContext(), "Document not loaded", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Show a progress message
+        Toast.makeText(requireContext(), "Preparing PDF...", Toast.LENGTH_SHORT).show();
+
+        // Run the export in a background thread
+        new Thread(() -> {
+            try {
+                // Get all pages for the document
+                List<PageEntity> pages = database.pageDao().getPagesByDocumentSync(documentId);
+                
+                if (pages == null || pages.isEmpty()) {
+                    requireActivity().runOnUiThread(() -> 
+                        Toast.makeText(requireContext(), "No pages to export", Toast.LENGTH_SHORT).show());
+                    return;
+                }
+
+                // Sort pages by index to ensure correct order
+                pages.sort((p1, p2) -> Integer.compare(p1.index, p2.index));
+
+                // Create a list to hold all bitmaps
+                List<Bitmap> bitmaps = new ArrayList<>();
+                
+                // Load bitmap for each page
+                for (PageEntity page : pages) {
+                    try {
+                        Bitmap bitmap = null;
+                        if (page.uri_original != null) {
+                            if (page.uri_original.startsWith("content://") || page.uri_original.startsWith("file://")) {
+                                // It's already a URI, use it directly
+                                Uri imageUri = Uri.parse(page.uri_original);
+                                bitmap = ImageUtils.getBitmapFromUri(requireContext(), imageUri);
+                            } else {
+                                // It's a file path, check if it exists and load it directly
+                                java.io.File imageFile = new java.io.File(page.uri_original);
+                                if (imageFile.exists()) {
+                                    bitmap = BitmapFactory.decodeFile(page.uri_original);
+                                } else {
+                                    System.out.println("File does not exist: " + page.uri_original);
+                                }
+                            }
+                        }
+                        
+                        if (bitmap != null) {
+                            bitmaps.add(bitmap);
+                        } else {
+                            // Log for debugging
+                            System.out.println("Could not load bitmap for: " + page.uri_original);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        // Continue with other pages even if one fails
+                    }
+                }
+
+                if (bitmaps.isEmpty()) {
+                    requireActivity().runOnUiThread(() -> 
+                        Toast.makeText(requireContext(), "No valid images to export", Toast.LENGTH_SHORT).show());
+                    return;
+                }
+
+                // Create the PDF file
+                String fileName = "Document_" + documentId + ".pdf";
+                File pdfFile = PdfExportUtil.createPdfFromBitmapsWithA4Size(bitmaps, fileName, requireContext());
+
+                // Clean up bitmaps to free memory
+                for (Bitmap bitmap : bitmaps) {
+                    if (bitmap != null && !bitmap.isRecycled()) {
+                        bitmap.recycle();
+                    }
+                }
+
+                if (pdfFile != null && pdfFile.exists()) {
+                    // Share the PDF file
+                    sharePdfFile(pdfFile);
+                } else {
+                    requireActivity().runOnUiThread(() -> 
+                        Toast.makeText(requireContext(), "Failed to create PDF", Toast.LENGTH_SHORT).show());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                requireActivity().runOnUiThread(() -> 
+                    Toast.makeText(requireContext(), "Error exporting PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        }).start();
+    }
+
+    private void sharePdfFile(File pdfFile) {
+        requireActivity().runOnUiThread(() -> {
+            try {
+                // Create a content URI for the PDF file using FileProvider
+                Uri pdfUri = FileProvider.getUriForFile(
+                    requireContext(),
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
+                    pdfFile
+                );
+
+                // Create the share intent
+                Intent shareIntent = new Intent();
+                shareIntent.setAction(Intent.ACTION_SEND);
+                shareIntent.putExtra(Intent.EXTRA_STREAM, pdfUri);
+                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                shareIntent.setType("application/pdf");
+
+                // Create a chooser intent to let the user choose an app to share with
+                Intent chooserIntent = Intent.createChooser(shareIntent, "Share PDF");
+
+                // Grant temporary read permission to the receiving app
+                List<android.content.pm.ResolveInfo> resInfoList = requireContext().getPackageManager()
+                    .queryIntentActivities(chooserIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                for (android.content.pm.ResolveInfo resolveInfo : resInfoList) {
+                    String packageName = resolveInfo.activityInfo.packageName;
+                    requireContext().grantUriPermission(
+                        packageName,
+                        pdfUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    );
+                }
+
+                // Start the activity to share the PDF
+                startActivity(chooserIntent);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(requireContext(), "Error sharing PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void setupButtons() {
         binding.fabAddPage.setOnClickListener(v -> {
             // Add a new page to the document
@@ -183,9 +322,7 @@ public class DocumentDetailFragment extends Fragment {
         });
         
         binding.btnExport.setOnClickListener(v -> {
-            // Show export options
-            // TODO: Implement export functionality
-            Toast.makeText(requireContext(), "Export functionality coming soon", Toast.LENGTH_SHORT).show();
+            exportToPdf();
         });
     }
 
