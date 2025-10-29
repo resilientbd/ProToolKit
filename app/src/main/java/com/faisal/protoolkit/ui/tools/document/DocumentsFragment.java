@@ -39,10 +39,16 @@ public class DocumentsFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        adapter = new DocumentAdapter(document -> {
-            // Navigate to document detail
-            // TODO: Implement navigation to DocumentDetailFragment
-        });
+        adapter = new DocumentAdapter(
+            document -> {
+                // Navigate to document detail
+                // TODO: Implement navigation to DocumentDetailFragment
+            },
+            document -> {
+                // Delete functionality not typically needed in main documents fragment
+                // This will be handled in DocumentScannerFragment
+            }
+        );
         
         binding.documentsRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
         binding.documentsRecyclerView.setAdapter(adapter);

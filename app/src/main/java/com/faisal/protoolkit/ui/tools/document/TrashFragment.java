@@ -39,10 +39,16 @@ public class TrashFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        adapter = new DocumentAdapter(document -> {
-            // View trashed document
-            // TODO: Implement document viewing in trash
-        });
+        adapter = new DocumentAdapter(
+            document -> {
+                // View trashed document
+                // TODO: Implement document viewing in trash
+            },
+            document -> {
+                // Delete functionality not typically needed in trash fragment
+                // Or implement permanent deletion
+            }
+        );
         
         binding.trashRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.trashRecyclerView.setAdapter(adapter);

@@ -519,7 +519,7 @@ public class DocumentScannerFragment extends BaseFragment {
     private void showDeleteConfirmationDialog(DocumentEntity document) {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Delete Document?")
-                .setMessage("Are you sure you want to delete \"" + document.title + "\"? This action cannot be undone.")
+                .setMessage("Are you sure you want to delete \\"" + document.title + "\\"? This action cannot be undone.")
                 .setPositiveButton("Delete", (dialog, which) -> {
                     deleteDocument(document);
                 })
@@ -537,10 +537,10 @@ public class DocumentScannerFragment extends BaseFragment {
                 database.pageDao().deletePagesByDocument(document.id);
                 
                 // Delete the document itself
-                database.documentDao().purgeDocument(document.id);
+                database.documentDao().deleteDocumentById(document.id);
                 
                 // Delete the document's folder and all its files
-                fileManager.deleteDocument(document.id);
+                fileManager.deleteDocumentDir(document.id);
                 
                 // Update UI on main thread
                 requireActivity().runOnUiThread(() -> {

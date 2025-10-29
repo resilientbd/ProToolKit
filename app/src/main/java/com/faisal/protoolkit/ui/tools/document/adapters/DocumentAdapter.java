@@ -3,6 +3,7 @@ package com.faisal.protoolkit.ui.tools.document.adapters;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -18,15 +19,21 @@ import java.io.File;
 
 public class DocumentAdapter extends ListAdapter<DocumentEntity, DocumentAdapter.DocumentViewHolder> {
     private final OnDocumentClickListener listener;
+    private final OnDocumentDeleteListener deleteListener;
     private final FileManager fileManager;
 
     public interface OnDocumentClickListener {
         void onDocumentClick(DocumentEntity document);
     }
 
-    public DocumentAdapter(OnDocumentClickListener listener) {
+    public interface OnDocumentDeleteListener {
+        void onDocumentDelete(DocumentEntity document);
+    }
+
+    public DocumentAdapter(OnDocumentClickListener listener, OnDocumentDeleteListener deleteListener) {
         super(DIFF_CALLBACK);
         this.listener = listener;
+        this.deleteListener = deleteListener;
         // Initialize FileManager with context - for now we'll pass a temporary file manager
         // In a real implementation, this would come from the fragment
         this.fileManager = null; // Will be handled differently
@@ -66,6 +73,7 @@ public class DocumentAdapter extends ListAdapter<DocumentEntity, DocumentAdapter
         private final TextView titleTextView;
         private final TextView pageCountTextView;
         private final TextView updatedAtTextView;
+        private final ImageButton deleteButton;
 
         DocumentViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -73,11 +81,19 @@ public class DocumentAdapter extends ListAdapter<DocumentEntity, DocumentAdapter
             titleTextView = itemView.findViewById(R.id.title_text_view);
             pageCountTextView = itemView.findViewById(R.id.page_count_text_view);
             updatedAtTextView = itemView.findViewById(R.id.updated_at_text_view);
+            deleteButton = itemView.findViewById(R.id.delete_button);
 
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
                     listener.onDocumentClick(getItem(position));
+                }
+            });
+
+            deleteButton.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION) {
+                    deleteListener.onDocumentDelete(getItem(position));
                 }
             });
         }
