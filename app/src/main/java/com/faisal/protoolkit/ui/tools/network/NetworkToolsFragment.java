@@ -58,8 +58,12 @@ public class NetworkToolsFragment extends BaseFragment {
     }
 
     private void setupButtons() {
+        binding.buttonCancel.setOnClickListener( view -> {
+            dismissResultView();
+        });
         // Basic network test buttons
         binding.buttonPing.setOnClickListener(v -> {
+            viewResult();
             viewModel.measureLatency();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
@@ -67,6 +71,7 @@ public class NetworkToolsFragment extends BaseFragment {
         });
         
         binding.buttonSpeedTest.setOnClickListener(v -> {
+            viewResult();
             viewModel.performSpeedTest();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
@@ -74,6 +79,7 @@ public class NetworkToolsFragment extends BaseFragment {
         });
         
         binding.buttonConnectionCheck.setOnClickListener(v -> {
+            viewResult();
             viewModel.checkConnection();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
@@ -81,6 +87,7 @@ public class NetworkToolsFragment extends BaseFragment {
         });
         
         binding.buttonPingHost.setOnClickListener(v -> {
+            viewResult();
             viewModel.pingHost();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
@@ -89,6 +96,7 @@ public class NetworkToolsFragment extends BaseFragment {
 
         // Advanced network test buttons
         binding.buttonDnsLookup.setOnClickListener(v -> {
+            viewResult();
             viewModel.performDnsLookup();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
@@ -96,6 +104,7 @@ public class NetworkToolsFragment extends BaseFragment {
         });
         
         binding.buttonPortScan.setOnClickListener(v -> {
+            viewResult();
             viewModel.performPortScan();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
@@ -103,6 +112,7 @@ public class NetworkToolsFragment extends BaseFragment {
         });
         
         binding.buttonTraceroute.setOnClickListener(v -> {
+            viewResult();
             viewModel.performTraceroute();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
@@ -110,6 +120,7 @@ public class NetworkToolsFragment extends BaseFragment {
         });
         
         binding.buttonNetworkDiagnostics.setOnClickListener(v -> {
+            viewResult();
             viewModel.runFullDiagnostics();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
@@ -118,6 +129,7 @@ public class NetworkToolsFragment extends BaseFragment {
 
         // File management action buttons
         binding.buttonCleanCache.setOnClickListener(v -> {
+            viewResult();
             viewModel.cleanCache();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
@@ -125,6 +137,7 @@ public class NetworkToolsFragment extends BaseFragment {
         });
         
         binding.buttonClearDownloads.setOnClickListener(v -> {
+            viewResult();
             viewModel.clearDownloads();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
@@ -132,11 +145,22 @@ public class NetworkToolsFragment extends BaseFragment {
         });
         
         binding.buttonBackupMedia.setOnClickListener(v -> {
+            viewResult();
             viewModel.backupMedia();
             if (ServiceLocator.getSettingsRepository().isHapticsEnabled()) {
                 HapticHelper.vibrate(requireContext());
             }
         });
+    }
+
+    private void viewResult()
+    {
+        binding.resultCardView.setVisibility(View.VISIBLE);
+    }
+    private void dismissResultView()
+    {
+        binding.resultCardView.setVisibility(View.GONE);
+        binding.textResult.setText("");
     }
 
     private void observeData() {
