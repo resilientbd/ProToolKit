@@ -38,18 +38,26 @@ public class HomeViewModel extends BaseViewModel {
 
     private void buildTools() {
         allTools.clear();
-        allTools.add(new ToolItem(AppConstants.TOOL_ID_UNIT_CONVERTER, R.string.label_unit_converter,
-                R.drawable.ic_tool_unit, R.id.unitConverterFragment, false));
-        allTools.add(new ToolItem(AppConstants.TOOL_ID_TEXT_TOOLS, R.string.label_text_tools,
-                R.drawable.ic_tool_text, R.id.textToolsFragment, false));
+        allTools.add(new ToolItem(AppConstants.TOOL_ID_DOC_SCANNER, R.string.label_doc_scanner,
+                R.drawable.ic_tool_file, R.id.documentScannerFragment, true));
+        allTools.add(new ToolItem(AppConstants.TOOL_ID_NETWORK_TOOLS, R.string.label_network_tools,
+                R.drawable.ic_tool_network, R.id.networkToolsFragment, false));
+
         allTools.add(new ToolItem(AppConstants.TOOL_ID_DEVICE_INFO, R.string.label_device_info,
                 R.drawable.ic_tool_device, R.id.deviceInfoFragment, false));
+        allTools.add(new ToolItem(AppConstants.TOOL_ID_UNIT_CONVERTER, R.string.label_unit_converter,
+                R.drawable.ic_tool_unit, R.id.unitConverterFragment, false));
         allTools.add(new ToolItem(AppConstants.TOOL_ID_QR_SCANNER, R.string.label_qr_scanner,
                 R.drawable.ic_tool_qr, R.id.qrScannerFragment, true));
         allTools.add(new ToolItem(AppConstants.TOOL_ID_FILE_TOOLS, R.string.label_file_tools,
                 R.drawable.ic_tool_file, R.id.fileToolsFragment, false));
-        allTools.add(new ToolItem(AppConstants.TOOL_ID_NETWORK_TOOLS, R.string.label_network_tools,
-                R.drawable.ic_tool_network, R.id.networkToolsFragment, false));
+        allTools.add(new ToolItem(AppConstants.TOOL_ID_TEXT_TOOLS, R.string.label_text_tools,
+                R.drawable.ic_tool_text, R.id.textToolsFragment, false));
+
+
+
+
+
     }
 
     public LiveData<List<ToolItem>> getVisibleTools() {
