@@ -70,6 +70,8 @@
             
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
+            android:supportsRtl="true"
+            android:theme="@style/Theme.ProToolkit.StatusBar"
             />
     </application>
 

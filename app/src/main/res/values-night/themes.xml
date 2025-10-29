@@ -22,4 +22,15 @@
         <item name="colorOutlineVariant">@color/md_theme_outline_dark</item>
     </style>
 
+    <style name="Theme.ProToolkit.StatusBar" parent="Theme.ProToolkit">
+        <!-- Allow drawing behind status bar -->
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:fitsSystemWindows">true</item>
+
+        <!-- Status bar styles -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item> <!-- dark icons -->
+    </style>
+
+
 </resources>
