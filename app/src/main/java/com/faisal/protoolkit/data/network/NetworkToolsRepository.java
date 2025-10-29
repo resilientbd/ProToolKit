@@ -1,6 +1,8 @@
 package com.faisal.protoolkit.data.network;
 
 import android.app.Application;
+import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -13,6 +15,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
@@ -25,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * Performs comprehensive network tests including all suggested features.
  */
 public class NetworkToolsRepository {
-
+    private static String TAG = "NetworkToolsRepository";
     // Callback interfaces
     public interface LatencyCallback {
         void onSuccess(int latencyMs);
@@ -223,74 +226,144 @@ public class NetworkToolsRepository {
     }
 
     // 1. Ping / Latency test
-    public void measureLatency(final String targetUrl, final int count, final int packetSize, final int timeoutMs, final LatencyCallback callback) {
-        AppExecutors.io().execute(() -> {
+
+    public  void measureLatency(
+            final String target,
+            final int count,
+            final int packetSize,
+            final int timeoutMs,
+            final LatencyCallback callback
+    ) {
+        new Thread(() -> {
             try {
-                List<Integer> latencies = new ArrayList<>();
-                int packetLoss = 0;
-                
+                final boolean looksLikeUrl = target.startsWith("http://") || target.startsWith("https://");
+                final List<Integer> samples = new ArrayList<>();
+                int losses = 0;
+
                 for (int i = 0; i < count; i++) {
-                    long start = System.currentTimeMillis();
+                    Integer ms = null;
                     try {
-                        URL url = new URL(targetUrl.startsWith("http") ? targetUrl : "http://" + targetUrl);
-                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                        connection.setRequestMethod("HEAD");
-                        connection.setConnectTimeout(timeoutMs);
-                        connection.setReadTimeout(timeoutMs);
-                        connection.connect();
-                        int responseCode = connection.getResponseCode();
-                        connection.disconnect();
-                        
-                        if (responseCode >= 200 && responseCode < 400) {
-                            int latency = (int) (System.currentTimeMillis() - start);
-                            latencies.add(latency);
+                        if (looksLikeUrl) {
+                            ms = pingHttp(target, timeoutMs);
                         } else {
-                            packetLoss++;
+                            // Try TCP to 443 then 80; if both fail, ICMP ping
+                            ms = tryTcpThenIcmp(target, timeoutMs, packetSize);
                         }
-                    } catch (IOException e) {
-                        packetLoss++;
+                    } catch (Exception e) {
+                        Log.w(TAG, "probe error: " + e.getMessage());
                     }
-                    
-                    // Add small delay between pings
-                    Thread.sleep(100);
+
+                    if (ms == null) {
+                        losses++;
+                    } else {
+                        samples.add(ms);
+                    }
+
+                    try { Thread.sleep(100); } catch (InterruptedException ignored) {}
                 }
-                
-                if (latencies.isEmpty()) {
-                    callback.onError("All packets lost");
+
+                if (samples.isEmpty()) {
+                    callback.onError("All probes failed (100% loss). If you used HTTP to an IP, use TCP/ICMP instead.");
                     return;
                 }
-                
-                // Calculate statistics
+
+                // stats
                 int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE, sum = 0;
-                for (int latency : latencies) {
-                    if (latency < min) min = latency;
-                    if (latency > max) max = latency;
-                    sum += latency;
+                for (int v : samples) {
+                    min = Math.min(min, v);
+                    max = Math.max(max, v);
+                    sum += v;
                 }
-                int avg = sum / latencies.size();
-                
-                // Calculate standard deviation
-                long sumSquaredDiff = 0;
-                for (int latency : latencies) {
-                    sumSquaredDiff += Math.pow(latency - avg, 2);
-                }
-                double stddev = Math.sqrt(sumSquaredDiff / latencies.size());
-                
-                StringBuilder result = new StringBuilder();
-                result.append("Ping Statistics for ").append(targetUrl).append(":\n");
-                result.append("• Packets Sent: ").append(count).append("\n");
-                result.append("• Packets Received: ").append(latencies.size()).append("\n");
-                result.append("• Packet Loss: ").append(String.format("%.1f%%", (packetLoss * 100.0) / count)).append("\n");
-                result.append("• Minimum Latency: ").append(min).append(" ms\n");
-                result.append("• Average Latency: ").append(avg).append(" ms\n");
-                result.append("• Maximum Latency: ").append(max).append(" ms\n");
-                result.append("• Standard Deviation: ").append(String.format("%.2f", stddev)).append(" ms");
-                
+                int avg = sum / samples.size();
+                long ssd = 0;
+                for (int v : samples) ssd += (long) (v - avg) * (v - avg);
+                double stddev = Math.sqrt(ssd / (double) samples.size());
+
+                String summary = "Ping Statistics for " + target + "\n" +
+                        "• Sent: " + count + "\n" +
+                        "• Received: " + samples.size() + "\n" +
+                        "• Loss: " + String.format("%.1f%%", (losses * 100.0) / count) + "\n" +
+                        "• Min/Avg/Max: " + min + "/" + avg + "/" + max + " ms\n" +
+                        "• StdDev: " + String.format("%.2f", stddev) + " ms";
+
+                Log.d(TAG,"SUMMARY:"+summary);
+
                 callback.onSuccess(avg);
+
             } catch (Exception e) {
-                callback.onError(e.getLocalizedMessage());
+                callback.onError(e.getMessage());
             }
-        });
+        }).start();
+    }
+
+    /** HTTP HEAD latency — only for full URLs like https://example.com */
+    public static Integer pingHttp(String urlString, int timeoutMs) {
+        try {
+            URL url = new URL(urlString);
+            long t0 = System.currentTimeMillis();
+            HttpURLConnection c = (HttpURLConnection) url.openConnection();
+            c.setRequestMethod("HEAD"); // some servers may not support HEAD; fallback to GET if needed
+            c.setConnectTimeout(timeoutMs);
+            c.setReadTimeout(timeoutMs);
+            c.connect();
+            int code = c.getResponseCode();
+            c.disconnect();
+            if (code >= 200 && code < 400) {
+                return (int) (System.currentTimeMillis() - t0);
+            } else {
+                // treat non-2xx/3xx as failure
+                return null;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Try TCP connect to 443 then 80; if both fail, ICMP ping command */
+    private static Integer tryTcpThenIcmp(String host, int timeoutMs, int packetSize) {
+        Integer ms = pingTcp(host, 443, timeoutMs);
+        if (ms != null) return ms;
+        ms = pingTcp(host, 80, timeoutMs);
+        if (ms != null) return ms;
+        return pingIcmp(host, timeoutMs, packetSize);
+    }
+
+    /** TCP connect latency to a host:port */
+    public static Integer pingTcp(String host, int port, int timeoutMs) {
+        try (Socket s = new Socket()) {
+            long t0 = System.currentTimeMillis();
+            s.connect(new InetSocketAddress(host, port), timeoutMs);
+            return (int) (System.currentTimeMillis() - t0);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** ICMP ping using system command (Android/Linux) */
+    public static Integer pingIcmp(String host, int timeoutMs, int packetSize) {
+        // Android/toolbox ping supports: -c (count), -W (per-packet timeout seconds), -s (payload size)
+        int timeoutSec = Math.max(1, (int) Math.ceil(timeoutMs / 1000.0));
+        String pingBin = (Build.VERSION.SDK_INT > 0) ? "/system/bin/ping" : "ping"; // Android vs others
+        String cmd = pingBin + " -c 1 -W " + timeoutSec + " -s " + Math.max(0, packetSize) + " " + host;
+
+        try {
+            long t0 = System.currentTimeMillis();
+            Process p = Runtime.getRuntime().exec(cmd);
+            int rc = p.waitFor();
+            if (rc == 0) {
+                return (int) (System.currentTimeMillis() - t0);
+            } else {
+                // read stderr for debugging if needed
+                BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+                String line; StringBuilder err = new StringBuilder();
+                while ((line = br.readLine()) != null) err.append(line).append('\n');
+                Log.w(TAG, "ping rc=" + rc + " err=" + err);
+                return null;
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "icmp ping failed: " + e.getMessage());
+            return null;
+        }
     }
 
     // 2. Traceroute

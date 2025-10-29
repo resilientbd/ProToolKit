@@ -1,5 +1,7 @@
 package com.faisal.protoolkit.ui.tools.network;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -54,7 +56,7 @@ public class NetworkToolsViewModel extends BaseViewModel {
     public LiveData<Boolean> inProgress() { return inProgress; }
     public LiveData<String> getCurrentTest() { return currentTest; }
     public LiveData<String> getErrorMessage() { return errorMessage; }
-
+    private static final String TAG = "NetworkToolsViewModel";
     public void setTargetUrl(@NonNull String url) {
         targetUrl.setValue(url);
     }
@@ -62,6 +64,7 @@ public class NetworkToolsViewModel extends BaseViewModel {
     // Basic network tests
     public void measureLatency() {
         String url = targetUrl.getValue();
+        Log.d(TAG,"Measure Latency URL:"+url);
         if (url == null || url.trim().isEmpty()) {
             postError("Invalid URL");
             return;
