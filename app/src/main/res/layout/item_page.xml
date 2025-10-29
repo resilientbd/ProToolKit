@@ -37,30 +37,37 @@
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
-            <LinearLayout
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
+
                 android:layout_marginTop="4dp">
 
                 <ImageButton
                     android:id="@+id/btn_edit_page"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
-                    android:layout_marginEnd="4dp"
-                    android:src="@drawable/ic_add"
+                    android:layout_marginEnd="16dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Edit page" />
+                    android:contentDescription="Edit page"
+                    android:src="@android:drawable/ic_menu_edit"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/btn_delete_page"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <ImageButton
                     android:id="@+id/btn_delete_page"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
-                    android:src="@drawable/ic_delete"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Delete page" />
+                    android:contentDescription="Delete page"
+                    android:src="@drawable/ic_delete"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
-            </LinearLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
         </LinearLayout>
 

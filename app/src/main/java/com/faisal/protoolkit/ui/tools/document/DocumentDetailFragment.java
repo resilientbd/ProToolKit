@@ -311,15 +311,10 @@ public class DocumentDetailFragment extends Fragment {
     private void setupButtons() {
         binding.fabAddPage.setOnClickListener(v -> {
             // Add a new page to the document
-            // TODO: Implement add page functionality
-            Toast.makeText(requireContext(), "Add page functionality coming soon", Toast.LENGTH_SHORT).show();
+            startEditingDocument();
         });
         
-        binding.btnEdit.setOnClickListener(v -> {
-            // Edit the document
-            // TODO: Implement edit functionality
-            Toast.makeText(requireContext(), "Edit functionality coming soon", Toast.LENGTH_SHORT).show();
-        });
+
         
         binding.btnExport.setOnClickListener(v -> {
             exportToPdf();
